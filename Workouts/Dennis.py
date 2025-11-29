@@ -156,7 +156,7 @@ WORKOUTS = [
 
     # Za 27 dec — 25 km
     {
-        "date": "2025-12-27",
+        "date": "2025-12-28",
         "name": "Lange Duurloop 25 km",
         "duration_minutes": 125,
         "description": "25 km lange duurloop in Z2 aan 5:00/km",
