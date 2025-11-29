@@ -3,4 +3,5 @@ ATHLETES = {
     "TestSer": "i443264",
     "Sebastian Serneels": "i108574",
     "Dennis": "i430636",
+    "Wonne": "i444808",
 }
