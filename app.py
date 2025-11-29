@@ -1,0 +1,122 @@
+import os
+import importlib.util
+from dotenv import load_dotenv
+
+# Importeer atletenlijst
+from athletes import ATHLETES
+
+# Importeer push-functionaliteit
+from push_to_intervals import push_workouts_to_intervals, WORKOUTS
+
+
+# ========================================
+# Environment laden
+# ========================================
+load_dotenv()
+
+WORKOUTS_DIR = "Workouts"
+
+
+# ========================================
+# Workoutfile dynamisch inladen
+# ========================================
+def load_workouts_from_py(filepath):
+    spec = importlib.util.spec_from_file_location("workouts_module", filepath)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    if not hasattr(module, "WORKOUTS"):
+        print("❌ ERROR: De file bevat geen variabele WORKOUTS.")
+        exit(1)
+
+    return module.WORKOUTS
+
+
+# ========================================
+# Atleet kiezen in terminal
+# ========================================
+def choose_athlete():
+    print("\n👤 Kies een atleet:\n")
+
+    # Maak lijst van namen voor indexing
+    names = list(ATHLETES.keys())
+
+    # Toon lijst
+    for idx, name in enumerate(names, start=1):
+        print(f"{idx}. {name}")
+
+    # Vraag keuze
+    choice = int(input("\n👉 Selecteer het nummer van de atleet: "))
+
+    if choice < 1 or choice > len(names):
+        print("❌ Ongeldige keuze.")
+        exit(1)
+
+    # Ophalen van naam en bijhorende ID
+    selected_name = names[choice - 1]
+    selected_id = ATHLETES[selected_name]
+
+    # Zet ATHLETE_ID environment variable
+    os.environ["ATHLETE_ID"] = selected_id
+
+    print(f"\n➡️ Gekozen atleet: {selected_name} (ID: {selected_id})")
+
+    return selected_name, selected_id
+
+
+# ========================================
+# Workoutfile kiezen
+# ========================================
+def choose_workout_file():
+    print("\n📁 Beschikbare workout .py files:\n")
+
+    files = [f for f in os.listdir(WORKOUTS_DIR) if f.endswith(".py")]
+
+    if not files:
+        print("❌ Geen .py workoutfiles gevonden in Workouts/")
+        exit(1)
+
+    for idx, filename in enumerate(files, start=1):
+        print(f"{idx}. {filename}")
+
+    choice = int(input("\n👉 Kies het nummer van de file: "))
+
+    if choice < 1 or choice > len(files):
+        print("❌ Ongeldige keuze.")
+        exit(1)
+
+    selected = files[choice - 1]
+    full_path = os.path.join(WORKOUTS_DIR, selected)
+
+    print(f"\n📄 Gekozen bestand: {selected}")
+
+    return load_workouts_from_py(full_path)
+
+
+# ========================================
+# MAIN
+# ========================================
+def main():
+    print("============================================")
+    print("   🏋️  Intervals.icu Workout Uploader CLI")
+    print("============================================\n")
+
+    # 1. Atleet kiezen
+    athlete_name, athlete_id = choose_athlete()
+
+    # 2. Workoutfile kiezen
+    workouts = choose_workout_file()
+
+    # 3. Inladen in WORKOUTS lijst (die uit push_to_intervals komt)
+    WORKOUTS.clear()
+    WORKOUTS.extend(workouts)
+
+    # 4. Pushen naar Intervals.icu
+    print(f"\n🚀 Workouts worden geüpload voor {athlete_name} ({athlete_id})...\n")
+    push_workouts_to_intervals()
+
+    print("\n✅ Upload klaar!\n")
+
+
+if __name__ == "__main__":
+    main()
