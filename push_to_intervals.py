@@ -4,7 +4,7 @@ from datetime import datetime, timedelta  # Voor datum- en tijdberekeningen
 from dotenv import load_dotenv            # Laadt variabelen uit een .env bestand
 import os                                # OS-functionaliteit (omgeving, paden)
 
-from Workouts.MarathonGentSeb import WORKOUTS    # Importeert de lijst met workouts uit een extern .py bestand
+from Workouts.WorkoutsArchive.MarathonGentSeb import WORKOUTS    # Importeert de lijst met workouts uit een extern .py bestand
 
 
 # ==========================

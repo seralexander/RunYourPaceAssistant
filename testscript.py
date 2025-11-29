@@ -3,7 +3,7 @@ from requests.auth import HTTPBasicAuth  # Importeert Basic Authentication helpe
 from datetime import datetime, timedelta  # Importeert datums en tijdsduur-functionaliteit
 from dotenv import load_dotenv  # Importeert functie om .env-bestanden in te laden
 import os  # Importeert OS-module voor omgevingsvariabelen
-from Workouts.MarathonGentSeb import WORKOUTS  # Importeert een lijst/structuur met workouts uit een aparte file
+from Workouts.WorkoutsArchive.MarathonGentSeb import WORKOUTS  # Importeert een lijst/structuur met workouts uit een aparte file
 
 # ==========================
 # LOAD ENV
