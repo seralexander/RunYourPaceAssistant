@@ -1,5 +1,6 @@
 import os
 import importlib.util
+import shutil
 from dotenv import load_dotenv
 
 # Importeer push-functionaliteit
@@ -75,7 +76,28 @@ def choose_workout_file():
 
     print(f"\n📄 Gekozen bestand: {selected}")
 
-    return load_workouts_from_py(full_path)
+    workouts = load_workouts_from_py(full_path)
+
+    return workouts, full_path
+
+
+# ========================================
+# Workoutfile archiveren
+# ========================================
+def archive_workout_file(filepath):
+    archive_dir = os.path.join(WORKOUTS_DIR, "WorkoutsArchive")
+
+    # Map aanmaken indien nodig
+    os.makedirs(archive_dir, exist_ok=True)
+
+    filename = os.path.basename(filepath)
+    new_path = os.path.join(archive_dir, filename)
+
+    try:
+        shutil.move(filepath, new_path)
+        print(f"📦 Workoutfile verplaatst naar archive: {new_path}")
+    except Exception as e:
+        print(f"❌ Kon file niet verplaatsen naar archive: {e}")
 
 
 # ========================================
@@ -86,17 +108,20 @@ def main():
     print("   🏋️  Intervals.icu Workout Uploader CLI")
     print("============================================\n")
 
-    # 1. Straight athlete ID input
+    # 1. Athlete ID ingeven
     athlete_id = choose_athlete()
 
     # 2. Workoutfile kiezen
-    workouts = choose_workout_file()
+    workouts, filepath = choose_workout_file()
 
-    # 3. Inladen in WORKOUTS lijst (die uit push_to_intervals komt)
+    # 3. Inladen in WORKOUTS lijst
     WORKOUTS.clear()
     WORKOUTS.extend(workouts)
 
-    # 4. Pushen naar Intervals.icu
+    # 4. File archiveren
+    archive_workout_file(filepath)
+
+    # 5. Pushen naar Intervals.icu
     print(f"\n🚀 Workouts worden geüpload voor Athlete ID: {athlete_id}...\n")
     push_workouts_to_intervals()
 
