@@ -2,9 +2,6 @@ import os
 import importlib.util
 from dotenv import load_dotenv
 
-# Importeer atletenlijst
-from athletes import ATHLETES
-
 # Importeer push-functionaliteit
 from push_to_intervals import push_workouts_to_intervals, WORKOUTS
 
@@ -33,35 +30,23 @@ def load_workouts_from_py(filepath):
 
 
 # ========================================
-# Atleet kiezen in terminal
+# Athlete ID handmatig ingeven
 # ========================================
 def choose_athlete():
-    print("\n👤 Kies een atleet:\n")
+    print("\n👤 Vul het Athlete ID in (zoals in Intervals.icu):\n")
 
-    # Maak lijst van namen voor indexing
-    names = list(ATHLETES.keys())
+    athlete_id = input("👉 Athlete ID: ").strip()
 
-    # Toon lijst
-    for idx, name in enumerate(names, start=1):
-        print(f"{idx}. {name}")
-
-    # Vraag keuze
-    choice = int(input("\n👉 Selecteer het nummer van de atleet: "))
-
-    if choice < 1 or choice > len(names):
-        print("❌ Ongeldige keuze.")
+    if athlete_id == "":
+        print("❌ Ongeldige invoer: Athlete ID mag niet leeg zijn.")
         exit(1)
 
-    # Ophalen van naam en bijhorende ID
-    selected_name = names[choice - 1]
-    selected_id = ATHLETES[selected_name]
-
     # Zet ATHLETE_ID environment variable
-    os.environ["ATHLETE_ID"] = selected_id
+    os.environ["ATHLETE_ID"] = athlete_id
 
-    print(f"\n➡️ Gekozen atleet: {selected_name} (ID: {selected_id})")
+    print(f"\n➡️ Gekozen Athlete ID: {athlete_id}")
 
-    return selected_name, selected_id
+    return athlete_id
 
 
 # ========================================
@@ -101,8 +86,8 @@ def main():
     print("   🏋️  Intervals.icu Workout Uploader CLI")
     print("============================================\n")
 
-    # 1. Atleet kiezen
-    athlete_name, athlete_id = choose_athlete()
+    # 1. Straight athlete ID input
+    athlete_id = choose_athlete()
 
     # 2. Workoutfile kiezen
     workouts = choose_workout_file()
@@ -112,7 +97,7 @@ def main():
     WORKOUTS.extend(workouts)
 
     # 4. Pushen naar Intervals.icu
-    print(f"\n🚀 Workouts worden geüpload voor {athlete_name} ({athlete_id})...\n")
+    print(f"\n🚀 Workouts worden geüpload voor Athlete ID: {athlete_id}...\n")
     push_workouts_to_intervals()
 
     print("\n✅ Upload klaar!\n")
