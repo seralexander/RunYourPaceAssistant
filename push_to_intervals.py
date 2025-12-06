@@ -4,7 +4,8 @@ from datetime import datetime, timedelta  # Voor datum- en tijdberekeningen
 from dotenv import load_dotenv            # Laadt variabelen uit een .env bestand
 import os                                # OS-functionaliteit (omgeving, paden)
 
-from Workouts.WorkoutsArchive.MarathonGentSeb import WORKOUTS    # Importeert de lijst met workouts uit een extern .py bestand
+# Dynamische lijst waarin de UI/CLI de gekozen workouts plaatst
+WORKOUTS = []
 
 
 # ==========================
@@ -150,3 +151,5 @@ def push_workouts_to_intervals():
         print(response.json())
     except:
         print(response.text)  # Fallback voor niet-JSON
+
+    return response

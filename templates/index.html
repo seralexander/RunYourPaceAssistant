@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RunYourPace Assistant</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
+
+        :root {
+            --bg: #0d4f49;
+            --bg-2: #0b3f3a;
+            --panel: rgba(255, 255, 255, 0.06);
+            --panel-strong: rgba(255, 255, 255, 0.12);
+            --text: #f5f9f7;
+            --muted: #c6d6d1;
+            --accent: #9adf9f;
+            --accent-strong: #5bcf73;
+            --stroke: rgba(255, 255, 255, 0.15);
+            --danger: #ff7b7b;
+            --success: #8ce2b0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Manrope", "Inter", system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 25% 20%, rgba(154, 223, 159, 0.12), transparent 35%),
+                radial-gradient(circle at 80% 0%, rgba(91, 207, 115, 0.15), transparent 30%),
+                linear-gradient(135deg, var(--bg), var(--bg-2));
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 36px 20px 48px;
+        }
+
+        header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .logo-block {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--stroke);
+            padding: 10px 12px;
+            border-radius: 14px;
+            backdrop-filter: blur(8px);
+        }
+
+        .logo-mark {
+            width: 140px;
+            height: 60px;
+            border-radius: 10px;
+            position: relative;
+            background: #0f6a62;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .logo-mark::before {
+            content: "";
+            position: absolute;
+            inset: 18%;
+            background: #9adf9f;
+        }
+
+        .logo-text {
+            position: relative;
+            font-weight: 800;
+            font-size: 20px;
+            color: #f7fff8;
+            letter-spacing: -0.4px;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: clamp(26px, 3.4vw, 34px);
+            letter-spacing: -0.4px;
+        }
+
+        .subtle {
+            margin: 2px 0 0;
+            color: var(--muted);
+            max-width: 720px;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: 18px;
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 12% 16%, rgba(154, 223, 159, 0.22), transparent 38%);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            letter-spacing: -0.2px;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0 4px;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--stroke);
+            color: var(--text);
+            padding: 9px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.12s ease, background 0.2s ease, border 0.2s ease;
+        }
+
+        .chip:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(154, 223, 159, 0.8);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 15px;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #0b3f3a;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        .primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .ghost {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--stroke);
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .workout-list {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .workout-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            border-radius: 14px;
+            padding: 12px;
+            text-align: left;
+            color: var(--text);
+            transition: border 0.15s ease, transform 0.12s ease, background 0.12s ease;
+            position: relative;
+        }
+
+        .workout-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(154, 223, 159, 0.9);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .workout-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(154, 223, 159, 0.6);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .badge.accent { background: rgba(154, 223, 159, 0.2); color: var(--text); }
+        .badge.dim { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+
+        .title {
+            font-weight: 700;
+            font-size: 16px;
+            margin: 6px 0;
+            letter-spacing: -0.1px;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .error {
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            font-size: 14px;
+        }
+
+        .status[data-tone="success"] { border-color: rgba(140, 226, 176, 0.6); color: var(--success); }
+        .status[data-tone="error"] { border-color: rgba(255, 123, 123, 0.6); color: var(--danger); }
+        .status[data-tone="warn"] { border-color: rgba(154, 223, 159, 0.6); color: var(--accent); }
+
+        pre {
+            background: rgba(11, 35, 32, 0.8);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--stroke);
+            color: #d8f4e2;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 6px;
+        }
+
+        .pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            font-size: 13px;
+            color: var(--muted);
+            width: fit-content;
+        }
+
+        .dropzone {
+            margin-top: 12px;
+            border: 1.5px dashed var(--stroke);
+            border-radius: 16px;
+            padding: 14px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.04);
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .dropzone.dragover {
+            border-color: var(--accent);
+            background: rgba(154, 223, 159, 0.12);
+        }
+
+        .dropzone p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 720px) {
+            header { grid-template-columns: 1fr; }
+            .row { flex-direction: column; align-items: stretch; }
+            .actions { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="logo-block">
+                <div class="logo-mark">
+                    <div class="logo-text">RunYour<br>Pace</div>
+                </div>
+            </div>
+            <div>
+                <h1>Push workouts naar Interals.icu</h1>
+                <p class="subtle">
+                    Kies je Athlete ID, upload of selecteer een workoutbestand uit de Workouts map en push in één klik.
+                    Nieuwe files worden na de push automatisch naar <code>Workouts/WorkoutsArchive</code> verplaatst.
+                </p>
+            </div>
+        </header>
+
+        <div class="grid">
+            <section class="card">
+                <h2>1. Kies Athlete ID</h2>
+                <div class="pill" style="margin-bottom:6px;">Search</div>
+                <input id="athleteSearch" type="text" placeholder="Zoek op naam of ID..." style="margin-bottom:12px;">
+
+                <div class="pill" style="margin-bottom:6px;">Select</div>
+                <div class="chip-row" id="athleteChips"></div>
+                <label for="athleteId">Of vul een Athlete ID in</label>
+                <input id="athleteId" type="text" placeholder="bv. i123456" style="margin-bottom:12px;">
+
+                <div class="pill" style="margin-bottom:6px;">Add</div>
+                <div class="row" style="gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                    <input id="athleteNameNew" type="text" placeholder="Nieuwe naam" style="flex:1; min-width:160px;">
+                    <input id="athleteIdNew" type="text" placeholder="Nieuwe Athlete ID" style="flex:1; min-width:160px;">
+                </div>
+                <button class="ghost" type="button" id="addAthleteBtn">Voeg atleet toe</button>
+                <div class="pill" id="selectedAthlete">Geen ID gekozen.</div>
+            </section>
+
+            <section class="card">
+                <div class="actions">
+                    <div>
+                        <h2 style="margin-bottom:4px;">2. Workouts</h2>
+                        <p class="muted" style="margin:0;">Upload een nieuwe .py of selecteer een bestaande file uit <code>Workouts/</code>.</p>
+                    </div>
+                    <button class="ghost" id="refreshBtn" type="button">Refresh lijst</button>
+                </div>
+                <div class="dropzone" id="dropzone">
+                    <strong>Drop hier je .py file</strong>
+                    <p>of</p>
+                    <button class="ghost" type="button" id="pickFileBtn">Kies bestand</button>
+                    <input type="file" id="fileInput" accept=".py" style="display:none;">
+                </div>
+                <div class="pill" style="margin-top:12px; margin-bottom:6px;">Huidige workouts in Workouts/</div>
+                <div class="workout-list" id="workoutList"></div>
+                <div class="pill" id="selectedWorkout">Nog niets geselecteerd.</div>
+            </section>
+        </div>
+
+        <section class="card" style="margin-top:16px;">
+            <div class="actions">
+                <div>
+                    <h2 style="margin:0;">3. Push naar Intervals.icu</h2>
+                    <p class="muted" style="margin:0;">Controleer selectie en verstuur.</p>
+                </div>
+                <button class="primary" id="pushBtn" type="button">Push workouts</button>
+            </div>
+            <div class="status" id="statusBar" data-tone="info">Nog niet gepusht.</div>
+            <div style="margin-top:10px;">
+                <label class="muted" style="margin-bottom:6px; display:block;">API response</label>
+                <pre id="responseBox">Nog geen request verstuurd.</pre>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const chipsContainer = document.getElementById("athleteChips");
+        const athleteInput = document.getElementById("athleteId");
+        const athleteSearch = document.getElementById("athleteSearch");
+        const athleteNameNew = document.getElementById("athleteNameNew");
+        const athleteIdNew = document.getElementById("athleteIdNew");
+        const addAthleteBtn = document.getElementById("addAthleteBtn");
+        const selectedAthlete = document.getElementById("selectedAthlete");
+        const workoutList = document.getElementById("workoutList");
+        const selectedWorkout = document.getElementById("selectedWorkout");
+        const refreshBtn = document.getElementById("refreshBtn");
+        const pushBtn = document.getElementById("pushBtn");
+        const statusBar = document.getElementById("statusBar");
+        const responseBox = document.getElementById("responseBox");
+        const dropzone = document.getElementById("dropzone");
+        const fileInput = document.getElementById("fileInput");
+        const pickFileBtn = document.getElementById("pickFileBtn");
+
+        let workoutFiles = [];
+        let chosenPath = null;
+        let athletesAll = [];
+
+        function setStatus(message, tone = "info") {
+            statusBar.textContent = message;
+            statusBar.dataset.tone = tone;
+        }
+
+        function formatRange(file) {
+            if (!file.start_date && !file.end_date) return "Geen datums gevonden";
+            if (file.start_date === file.end_date) return file.start_date;
+            return `${file.start_date || "?"} → ${file.end_date || "?"}`;
+        }
+
+        function renderAthletes(list) {
+            chipsContainer.innerHTML = "";
+            list.forEach(({ name, id }) => {
+                const wrapper = document.createElement("div");
+                wrapper.style.display = "flex";
+                wrapper.style.alignItems = "center";
+                wrapper.style.gap = "6px";
+
+                const selectBtn = document.createElement("button");
+                selectBtn.className = "chip";
+                selectBtn.type = "button";
+                selectBtn.textContent = `${name} (${id})`;
+                selectBtn.addEventListener("click", () => {
+                    athleteInput.value = id;
+                    selectedAthlete.textContent = `Gekozen: ${name} (${id})`;
+                });
+
+                const delBtn = document.createElement("button");
+                delBtn.className = "ghost";
+                delBtn.type = "button";
+                delBtn.textContent = "Delete";
+                delBtn.style.padding = "6px 10px";
+                delBtn.style.fontSize = "12px";
+                delBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    try {
+                        await fetchJson("/api/athletes", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name }),
+                        });
+                        setStatus(`Atleet verwijderd: ${name}`, "success");
+                        if (athleteInput.value && selectedAthlete.textContent.includes(name)) {
+                            athleteInput.value = "";
+                            selectedAthlete.textContent = "Geen ID gekozen.";
+                        }
+                        await loadAthletes();
+                        renderAthletes(filterAthletes(athleteSearch.value));
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    }
+                });
+
+                wrapper.appendChild(selectBtn);
+                wrapper.appendChild(delBtn);
+                chipsContainer.appendChild(wrapper);
+            });
+        }
+
+        function renderWorkouts(list) {
+            workoutList.innerHTML = "";
+
+            if (!list.length) {
+                const empty = document.createElement("div");
+                empty.className = "muted";
+                empty.textContent = "Geen workout .py files gevonden.";
+                workoutList.appendChild(empty);
+                return;
+            }
+
+            list.forEach((file) => {
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "workout-card";
+                if (file.path === chosenPath) {
+                    card.classList.add("selected");
+                }
+
+                card.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <span class="badge ${file.location === "archive" ? "dim" : "accent"}">${file.location === "archive" ? "Archief" : "Nieuw"}</span>
+                        <span class="meta">${file.count ?? "?"} items</span>
+                    </div>
+                    <div class="title">${file.name}</div>
+                    <div class="meta">${formatRange(file)}</div>
+                    ${file.error ? `<div class="error">⚠ ${file.error}</div>` : ""}
+                `;
+
+                card.addEventListener("click", () => {
+                    chosenPath = file.path;
+                    selectedWorkout.textContent = `Gekozen: ${file.name}`;
+                    renderWorkouts(workoutFiles);
+                });
+
+                workoutList.appendChild(card);
+            });
+        }
+
+        async function fetchJson(url, options) {
+            const res = await fetch(url, options);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const err = new Error(data.error || `Request mislukt (${res.status})`);
+                err.details = data;
+                throw err;
+            }
+            return data;
+        }
+
+        async function loadAthletes() {
+            try {
+                const data = await fetchJson("/api/athletes");
+                athletesAll = data.athletes || [];
+                renderAthletes(athletesAll);
+            } catch (err) {
+                setStatus(err.message, "error");
+            }
+        }
+
+        function filterAthletes(term) {
+            const t = term.trim().toLowerCase();
+            if (!t) return athletesAll;
+            return athletesAll.filter((a) => a.name.toLowerCase().includes(t) || a.id.toLowerCase().includes(t));
+        }
+
+        async function loadWorkouts() {
+            setStatus("Workouts laden...", "info");
+            try {
+                const data = await fetchJson("/api/workouts");
+                workoutFiles = data.files || [];
+                renderWorkouts(workoutFiles);
+                setStatus("Workouts geladen.", "success");
+            } catch (err) {
+                setStatus(err.message, "error");
+            }
+        }
+
+        async function pushWorkouts() {
+            const athleteId = athleteInput.value.trim();
+            if (!athleteId) {
+                setStatus("Vul eerst een Athlete ID in.", "warn");
+                return;
+            }
+            if (!chosenPath) {
+                setStatus("Kies een workoutfile.", "warn");
+                return;
+            }
+
+            pushBtn.disabled = true;
+            setStatus("Workouts worden verstuurd...", "info");
+            responseBox.textContent = "Bezig met request...";
+
+            try {
+                const payload = { athleteId, workoutPath: chosenPath };
+                const result = await fetchJson("/api/push", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                setStatus("Push gelukt.", "success");
+                const summary = {
+                    apiStatus: result.apiStatus,
+                    archivedTo: result.archivedTo,
+                    archiveError: result.archiveError,
+                };
+                responseBox.textContent = JSON.stringify(result.apiBody || summary, null, 2);
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            } finally {
+                pushBtn.disabled = false;
+            }
+        }
+
+        refreshBtn.addEventListener("click", loadWorkouts);
+        pushBtn.addEventListener("click", pushWorkouts);
+        athleteInput.addEventListener("input", () => {
+            const value = athleteInput.value.trim();
+            selectedAthlete.textContent = value ? `Gekozen ID: ${value}` : "Geen ID gekozen.";
+        });
+        athleteSearch.addEventListener("input", () => {
+            renderAthletes(filterAthletes(athleteSearch.value));
+        });
+
+        addAthleteBtn.addEventListener("click", async () => {
+            const name = athleteNameNew.value.trim();
+            const id = athleteIdNew.value.trim();
+            if (!name || !id) {
+                setStatus("Naam en Athlete ID zijn verplicht om toe te voegen.", "warn");
+                return;
+            }
+            try {
+                await fetchJson("/api/athletes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, id }),
+                });
+                setStatus("Atleet toegevoegd.", "success");
+                athleteNameNew.value = "";
+                athleteIdNew.value = "";
+                await loadAthletes();
+                renderAthletes(filterAthletes(athleteSearch.value));
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        });
+
+        async function uploadFile(file) {
+            if (!file.name.toLowerCase().endsWith(".py")) {
+                setStatus("Alleen .py files zijn toegestaan.", "warn");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+
+            setStatus(`Uploaden: ${file.name}...`, "info");
+            try {
+                await fetchJson("/api/upload", { method: "POST", body: formData });
+                setStatus("Upload gelukt. Lijst verversen...", "success");
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        }
+
+        pickFileBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => {
+            const [file] = fileInput.files;
+            if (file) uploadFile(file);
+            fileInput.value = "";
+        });
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove("dragover");
+            });
+        });
+
+        dropzone.addEventListener("drop", (e) => {
+            const [file] = e.dataTransfer.files;
+            if (file) uploadFile(file);
+        });
+
+        loadAthletes();
+        loadWorkouts();
+    </script>
+</body>
+</html>
