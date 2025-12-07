@@ -253,5 +253,28 @@ def api_push():
     )
 
 
+@app.delete("/api/workouts")
+def api_delete_workout():
+    payload = request.get_json(force=True, silent=True) or {}
+    workout_path = payload.get("workoutPath")
+    if not workout_path:
+        return jsonify({"error": "Kies een workoutfile om te verwijderen."}), 400
+
+    try:
+        resolved_path = resolve_workout_path(workout_path)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 400
+
+    if not resolved_path.exists():
+        return jsonify({"error": "Bestand bestaat niet meer."}), 404
+
+    try:
+        resolved_path.unlink()
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Verwijderen mislukt: {exc}"}), 500
+
+    return jsonify({"ok": True, "deleted": str(resolved_path), "name": resolved_path.name})
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)
