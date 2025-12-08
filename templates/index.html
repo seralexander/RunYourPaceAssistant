@@ -55,14 +55,14 @@
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--stroke);
             padding: 10px 12px;
-            border-radius: 14px;
+            border-radius: 6px;
             backdrop-filter: blur(8px);
         }
 
         .logo-mark {
             width: 140px;
             height: 60px;
-            border-radius: 10px;
+            border-radius: 0;
             position: relative;
             background: #0f6a62;
             overflow: hidden;
@@ -439,11 +439,11 @@
 <body>
     <div class="page">
         <header>
-            <div class="logo-block">
+            <a class="logo-block" href="https://www.runyourpace.be" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
                 <div class="logo-mark">
                     <div class="logo-text">RunYour<br>Pace</div>
                 </div>
-            </div>
+            </a>
             <div>
                 <h1>Push workouts naar Intervals.icu</h1>
                 <p class="subtle">
@@ -574,7 +574,8 @@
         function renderAthletes(list) {
             chipsContainer.innerHTML = "";
             const selectedId = athleteInput.value.trim();
-            list.forEach(({ name, id }) => {
+            const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name, "nl", { sensitivity: "base" }));
+            sorted.forEach(({ name, id }) => {
                 const card = document.createElement("div");
                 card.className = "athlete-card";
                 if (selectedId && selectedId === id) {
