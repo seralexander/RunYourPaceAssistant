@@ -5,9 +5,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+import requests
+from requests.auth import HTTPBasicAuth
 
 from athletes import ATHLETES
 from push_to_intervals import WORKOUTS, push_workouts_to_intervals
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -16,6 +19,8 @@ ARCHIVE_DIR = WORKOUTS_DIR / "WorkoutsArchive"
 WORKOUTS_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
+
+INTERVALS_API_KEY = os.getenv("INTERVALS_API_KEY")
 
 
 def save_athletes():
@@ -274,6 +279,62 @@ def api_delete_workout():
         return jsonify({"error": f"Verwijderen mislukt: {exc}"}), 500
 
     return jsonify({"ok": True, "deleted": str(resolved_path), "name": resolved_path.name})
+
+
+@app.get("/api/history")
+def api_history():
+    athlete_id = request.args.get("athleteId", "").strip()
+    if not athlete_id:
+        return jsonify({"error": "Athlete ID is verplicht."}), 400
+
+    if not INTERVALS_API_KEY:
+        return jsonify({"error": "INTERVALS_API_KEY ontbreekt in de omgeving."}), 500
+
+    try:
+        oldest = (datetime.utcnow() - timedelta(days=90)).date().isoformat()
+        newest = datetime.utcnow().date().isoformat()
+        events_newest = (datetime.utcnow() + timedelta(days=180)).date().isoformat()
+        auth = HTTPBasicAuth("API_KEY", INTERVALS_API_KEY)
+
+        activities_url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/activities"
+        wellness_url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/wellness"
+        events_url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/events"
+
+        activities_resp = requests.get(
+            activities_url, params={"oldest": oldest, "newest": newest}, auth=auth, timeout=20
+        )
+        wellness_resp = requests.get(
+            wellness_url, params={"start": oldest, "end": newest}, auth=auth, timeout=20
+        )
+        events_resp = requests.get(
+            events_url, params={"oldest": oldest, "newest": events_newest}, auth=auth, timeout=20
+        )
+
+        activities_resp.raise_for_status()
+        wellness_resp.raise_for_status()
+        events_resp.raise_for_status()
+
+        activities = activities_resp.json()
+        wellness = wellness_resp.json()
+        events = events_resp.json()
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response else 500
+        body = exc.response.text if exc.response else str(exc)
+        return jsonify({"error": f"API fout ({status})", "details": body}), status
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Ophalen mislukt: {exc}"}), 500
+
+    return jsonify(
+        {
+            "ok": True,
+            "athleteId": athlete_id,
+            "range": {"from": oldest, "to": newest},
+            "activities": activities,
+            "wellness": wellness,
+            "events": events,
+            "eventsRange": {"from": oldest, "to": events_newest},
+        }
+    )
 
 
 if __name__ == "__main__":

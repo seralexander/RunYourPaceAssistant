@@ -123,28 +123,98 @@
             letter-spacing: -0.2px;
         }
 
-        .chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+        .athlete-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
             margin: 10px 0 4px;
         }
 
-        .chip {
+        .athlete-card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--stroke);
-            color: var(--text);
-            padding: 9px 12px;
-            border-radius: 12px;
+            border-radius: 14px;
+            padding: 12px;
+            position: relative;
             cursor: pointer;
-            transition: transform 0.12s ease, background 0.2s ease, border 0.2s ease;
+            transition: border 0.15s ease, transform 0.12s ease, background 0.12s ease;
         }
 
-        .chip:hover {
-            transform: translateY(-1px);
-            background: rgba(255, 255, 255, 0.1);
+        .athlete-card.menu-open { z-index: 30; }
+
+        .athlete-card:hover {
+            transform: translateY(-2px);
             border-color: rgba(117, 224, 179, 0.8);
+            background: rgba(255, 255, 255, 0.08);
         }
+
+        .athlete-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(117, 224, 179, 0.6);
+        }
+
+        .athlete-name {
+            font-weight: 700;
+            font-size: 15px;
+            margin: 0;
+        }
+
+        .athlete-id {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 2px 0 6px;
+        }
+
+        .athlete-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--stroke);
+            border-radius: 10px;
+            color: var(--text);
+            padding: 6px 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .menu-dropdown {
+            position: absolute;
+            top: 36px;
+            right: 0;
+            background: #112624;
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            padding: 6px;
+            display: none;
+            min-width: 170px;
+            z-index: 10;
+        }
+
+        .menu-dropdown.open { display: block; }
+
+        .menu-item {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: var(--text);
+            border: none;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-item:hover { background: rgba(255, 255, 255, 0.08); }
 
         label {
             display: block;
@@ -390,7 +460,7 @@
                 <input id="athleteSearch" type="text" placeholder="Zoek op naam of ID..." style="margin-bottom:12px;">
 
                 <div class="pill" style="margin-bottom:6px;">Select</div>
-                <div class="chip-row" id="athleteChips"></div>
+                <div class="athlete-grid" id="athleteChips"></div>
                 <label for="athleteId">Of vul een Athlete ID in</label>
                 <input id="athleteId" type="text" placeholder="bv. i123456" style="margin-bottom:12px;">
 
@@ -475,6 +545,20 @@
                 <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
         `;
+        const externalIcon = `
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+        `;
+        const downloadIcon = `
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+        `;
 
         function setStatus(message, tone = "info") {
             statusBar.textContent = message;
@@ -489,28 +573,136 @@
 
         function renderAthletes(list) {
             chipsContainer.innerHTML = "";
+            const selectedId = athleteInput.value.trim();
             list.forEach(({ name, id }) => {
-                const wrapper = document.createElement("div");
-                wrapper.style.display = "flex";
-                wrapper.style.alignItems = "center";
-                wrapper.style.gap = "6px";
+                const card = document.createElement("div");
+                card.className = "athlete-card";
+                if (selectedId && selectedId === id) {
+                    card.classList.add("selected");
+                }
 
-                const selectBtn = document.createElement("button");
-                selectBtn.className = "chip";
-                selectBtn.type = "button";
-                selectBtn.textContent = `${name} (${id})`;
-                selectBtn.addEventListener("click", () => {
+                card.addEventListener("click", () => {
                     athleteInput.value = id;
                     selectedAthlete.textContent = `Gekozen: ${name} (${id})`;
+                    renderAthletes(filterAthletes(athleteSearch.value));
                 });
 
-                const delBtn = document.createElement("button");
-                delBtn.className = "icon-btn danger";
-                delBtn.type = "button";
-                delBtn.innerHTML = trashIcon;
-                delBtn.title = `Verwijder ${name}`;
-                delBtn.addEventListener("click", async (e) => {
+                const title = document.createElement("p");
+                title.className = "athlete-name";
+                title.textContent = name;
+
+                const meta = document.createElement("p");
+                meta.className = "athlete-id";
+                meta.textContent = id;
+
+                const actionsWrap = document.createElement("div");
+                actionsWrap.className = "athlete-actions";
+
+                const menuBtn = document.createElement("button");
+                menuBtn.type = "button";
+                menuBtn.className = "menu-btn";
+                menuBtn.innerHTML = "&#8942;";
+
+                const menu = document.createElement("div");
+                menu.className = "menu-dropdown";
+
+                const closeMenus = () => {
+                    document.querySelectorAll(".menu-dropdown.open").forEach((el) => el.classList.remove("open"));
+                    document.querySelectorAll(".athlete-card.menu-open").forEach((el) => el.classList.remove("menu-open"));
+                };
+
+                menuBtn.addEventListener("click", (e) => {
                     e.stopPropagation();
+                    const isOpen = menu.classList.contains("open");
+                    closeMenus();
+                    if (!isOpen) {
+                        menu.classList.add("open");
+                        card.classList.add("menu-open");
+                    }
+                });
+
+                const makeItem = (label, handler) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "menu-item";
+                    btn.textContent = label;
+                    btn.addEventListener("click", handler);
+                    return btn;
+                };
+
+                const openIntervals = () => {
+                    window.open(`https://intervals.icu/athlete/${encodeURIComponent(id)}/activities`, "_blank", "noopener,noreferrer");
+                };
+
+                const downloadHistory = async (kind) => {
+                    try {
+                        const label = kind === "activities" ? "activiteiten" : kind === "health" ? "health" : "plan";
+                        setStatus(`Download ${label} voor ${name}...`, "info");
+                        const data = await fetchJson(`/api/history?athleteId=${encodeURIComponent(id)}`);
+                        let payload;
+                        let filename;
+                        if (kind === "activities") {
+                            payload = { athleteId: data.athleteId, range: data.range, activities: data.activities || [] };
+                            filename = `activities_${id}_last90days.json`;
+                        } else if (kind === "health") {
+                            payload = { athleteId: data.athleteId, range: data.range, wellness: data.wellness || [] };
+                            filename = `health_${id}_last90days.json`;
+                        } else {
+                            payload = {
+                                athleteId: data.athleteId,
+                                eventsRange: data.eventsRange,
+                                events: data.events || [],
+                            };
+                            filename = `plan_${id}_past90_next180.json`;
+                        }
+                        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        setStatus(`Download ${label} klaar voor ${name}.`, "success");
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    } finally {
+                        closeMenus();
+                    }
+                };
+
+                const editAthlete = async () => {
+                    const newName = prompt("Nieuwe naam voor atleet:", name) || "";
+                    if (!newName.trim()) return;
+                    const newId = prompt("Nieuwe Athlete ID:", id) || "";
+                    if (!newId.trim()) return;
+                    try {
+                        await fetchJson("/api/athletes", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name }),
+                        });
+                        await fetchJson("/api/athletes", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name: newName.trim(), id: newId.trim() }),
+                        });
+                        setStatus(`Atleet bijgewerkt: ${newName}`, "success");
+                        athleteInput.value = newId.trim();
+                        selectedAthlete.textContent = `Gekozen: ${newName} (${newId})`;
+                        await loadAthletes();
+                        renderAthletes(filterAthletes(athleteSearch.value));
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    } finally {
+                        closeMenus();
+                    }
+                };
+
+                const deleteAthlete = async () => {
                     try {
                         await fetchJson("/api/athletes", {
                             method: "DELETE",
@@ -527,12 +719,25 @@
                     } catch (err) {
                         setStatus(err.message, "error");
                         responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    } finally {
+                        closeMenus();
                     }
-                });
+                };
 
-                wrapper.appendChild(selectBtn);
-                wrapper.appendChild(delBtn);
-                chipsContainer.appendChild(wrapper);
+                menu.appendChild(makeItem("Open Intervals.icu", (e) => { e.stopPropagation(); openIntervals(); closeMenus(); }));
+                menu.appendChild(makeItem("Download activity history", (e) => { e.stopPropagation(); downloadHistory("activities"); }));
+                menu.appendChild(makeItem("Download health history", (e) => { e.stopPropagation(); downloadHistory("health"); }));
+                menu.appendChild(makeItem("Download current plan", (e) => { e.stopPropagation(); downloadHistory("plan"); }));
+                menu.appendChild(makeItem("Edit naam & ID", (e) => { e.stopPropagation(); editAthlete(); }));
+                menu.appendChild(makeItem("Delete", (e) => { e.stopPropagation(); deleteAthlete(); }));
+
+                actionsWrap.appendChild(menuBtn);
+                actionsWrap.appendChild(menu);
+
+                card.appendChild(title);
+                card.appendChild(meta);
+                card.appendChild(actionsWrap);
+                chipsContainer.appendChild(card);
             });
         }
 
@@ -763,6 +968,13 @@
 
         loadAthletes();
         loadWorkouts();
+
+        // Sluit openstaande menu's bij klik elders
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".menu-dropdown") && !e.target.closest(".menu-btn")) {
+                document.querySelectorAll(".menu-dropdown.open").forEach((el) => el.classList.remove("open"));
+            }
+        });
     </script>
 </body>
 </html>
