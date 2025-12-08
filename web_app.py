@@ -201,6 +201,32 @@ def api_upload():
     return jsonify({"ok": True, "path": str(target), "name": target.name})
 
 
+@app.post("/api/upload-text")
+def api_upload_text():
+    payload = request.get_json(force=True, silent=True) or {}
+    filename = str(payload.get("filename", "")).strip()
+    content = payload.get("content", "")
+
+    if not filename.lower().endswith(".py"):
+        return jsonify({"error": "Alleen .py files zijn toegestaan."}), 400
+    if not filename:
+        return jsonify({"error": "Bestandsnaam is verplicht."}), 400
+    if not isinstance(content, str) or not content.strip():
+        return jsonify({"error": "Inhoud mag niet leeg zijn."}), 400
+
+    target = WORKOUTS_DIR / Path(filename).name
+    if target.exists():
+        return jsonify({"error": "Er bestaat al een file met deze naam in Workouts."}), 409
+
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Kon file niet opslaan: {exc}"}), 500
+
+    return jsonify({"ok": True, "path": str(target), "name": target.name})
+
+
 @app.post("/api/push")
 def api_push():
     payload = request.get_json(force=True, silent=True) or {}

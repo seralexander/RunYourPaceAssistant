@@ -216,6 +216,73 @@
 
         .menu-item:hover { background: rgba(255, 255, 255, 0.08); }
 
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 100;
+        }
+
+        .modal-backdrop.show { display: flex; }
+
+        .modal {
+            background: #0f1f1e;
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            width: min(600px, 100%);
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 14px 38px rgba(0, 0, 0, 0.36);
+        }
+
+        .modal-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--stroke);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .modal-body {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid var(--stroke);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 220px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            color: var(--text);
+            padding: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 720px) {
+            .modal { width: 100%; }
+        }
+
         label {
             display: block;
             margin-bottom: 6px;
@@ -487,13 +554,16 @@
                         <span class="muted" style="font-size:12px;">opent in nieuw tabblad</span>
                     </a>
                 </div>
-                <div class="dropzone" id="dropzone">
-                    <strong>Drop hier je .py file</strong>
-                    <p>of</p>
-                    <button class="ghost" type="button" id="pickFileBtn">Kies bestand</button>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+                    <button class="ghost" type="button" id="pickFileBtn">Upload bestand (.py)</button>
+                    <button class="ghost" type="button" id="openPasteBtn">Plak workout code</button>
                     <input type="file" id="fileInput" accept=".py" style="display:none;">
                 </div>
-                <div class="pill" style="margin-top:12px; margin-bottom:6px;">Huidige workouts in Workouts/</div>
+                <div class="dropzone" id="dropzone">
+                    <strong>Drop hier je .py file</strong>
+                    <p>of klik om te kiezen</p>
+                </div>
+                <div class="pill" style="margin-top:8px; margin-bottom:6px;">Huidige workouts in Workouts/</div>
                 <div class="workout-list" id="workoutList"></div>
                 <div class="pill" id="selectedWorkout">Nog niets geselecteerd.</div>
             </section>
@@ -515,6 +585,25 @@
         </section>
     </div>
 
+    <div class="modal-backdrop" id="pasteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 style="margin:0; font-size:16px;">Plak workout code</h3>
+                <button class="icon-btn" type="button" id="closePasteModal" aria-label="Sluiten">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="pasteFilename">Bestandsnaam (.py)</label>
+                <input id="pasteFilename" type="text" placeholder="voorbeeld.py">
+                <label for="pasteContent">Workout code</label>
+                <textarea id="pasteContent" placeholder="# plak hier de inhoud van je workout.py"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="ghost" type="button" id="cancelPaste">Annuleer</button>
+                <button class="primary" type="button" id="submitPaste">Opslaan</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const chipsContainer = document.getElementById("athleteChips");
         const athleteInput = document.getElementById("athleteId");
@@ -532,6 +621,13 @@
         const dropzone = document.getElementById("dropzone");
         const fileInput = document.getElementById("fileInput");
         const pickFileBtn = document.getElementById("pickFileBtn");
+        const openPasteBtn = document.getElementById("openPasteBtn");
+        const pasteModal = document.getElementById("pasteModal");
+        const closePasteModal = document.getElementById("closePasteModal");
+        const cancelPaste = document.getElementById("cancelPaste");
+        const submitPaste = document.getElementById("submitPaste");
+        const pasteFilename = document.getElementById("pasteFilename");
+        const pasteContent = document.getElementById("pasteContent");
 
         let workoutFiles = [];
         let chosenPath = null;
@@ -818,6 +914,34 @@
             return data;
         }
 
+        function openPaste() {
+            pasteFilename.value = "";
+            pasteContent.value = "";
+            pasteModal.classList.add("show");
+        }
+
+        function closePaste() {
+            pasteModal.classList.remove("show");
+        }
+
+        async function uploadFile(file) {
+            if (!file.name.toLowerCase().endswith(".py")) {
+                setStatus("Alleen .py files zijn toegestaan.", "warn");
+                return;
+            }
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+            setStatus(`Uploaden: ${file.name}...`, "info");
+            try {
+                await fetchJson("/api/upload", { method: "POST", body: formData });
+                setStatus("Upload gelukt. Lijst verversen...", "success");
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        }
+
         async function loadAthletes() {
             try {
                 const data = await fetchJson("/api/athletes");
@@ -919,6 +1043,36 @@
             }
         });
 
+        openPasteBtn.addEventListener("click", () => openPaste());
+        closePasteModal.addEventListener("click", () => closePaste());
+        cancelPaste.addEventListener("click", () => closePaste());
+        submitPaste.addEventListener("click", async () => {
+            const filename = pasteFilename.value.trim();
+            const content = pasteContent.value;
+            if (!filename || !filename.toLowerCase().endsWith(".py")) {
+                setStatus("Bestandsnaam moet op .py eindigen.", "warn");
+                return;
+            }
+            if (!content.trim()) {
+                setStatus("Plak eerst de workout code.", "warn");
+                return;
+            }
+            setStatus(`Opslaan ${filename}...`, "info");
+            try {
+                await fetchJson("/api/upload-text", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename, content }),
+                });
+                setStatus("Code opgeslagen. Lijst verversen...", "success");
+                closePaste();
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        });
+
         async function uploadFile(file) {
             if (!file.name.toLowerCase().endsWith(".py")) {
                 setStatus("Alleen .py files zijn toegestaan.", "warn");
@@ -966,6 +1120,8 @@
             const [file] = e.dataTransfer.files;
             if (file) uploadFile(file);
         });
+
+        dropzone.addEventListener("click", () => fileInput.click());
 
         loadAthletes();
         loadWorkouts();
