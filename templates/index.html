@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RunYourPace Assistant</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
+
+        :root {
+            --bg: #0c2f2c;
+            --bg-2: #0a1f1d;
+            --panel: rgba(255, 255, 255, 0.04);
+            --panel-strong: rgba(255, 255, 255, 0.08);
+            --text: #f4f7f6;
+            --muted: #b7c5c0;
+            --accent: #75e0b3;
+            --accent-strong: #4fcf9b;
+            --stroke: rgba(255, 255, 255, 0.12);
+            --danger: #ff7f8a;
+            --success: #87e3b2;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Manrope", "Inter", system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(117, 224, 179, 0.08), transparent 48%),
+                radial-gradient(circle at 80% 10%, rgba(79, 207, 155, 0.14), transparent 32%),
+                linear-gradient(160deg, var(--bg), var(--bg-2));
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 36px 20px 48px;
+        }
+
+        header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .logo-block {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--stroke);
+            padding: 10px 12px;
+            border-radius: 6px;
+            backdrop-filter: blur(8px);
+        }
+
+        .logo-mark {
+            width: 140px;
+            height: 60px;
+            border-radius: 0;
+            position: relative;
+            background: #0f6a62;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .logo-mark::before {
+            content: "";
+            position: absolute;
+            inset: 18%;
+            background: #9adf9f;
+        }
+
+        .logo-text {
+            position: relative;
+            font-weight: 800;
+            font-size: 20px;
+            color: #f7fff8;
+            letter-spacing: -0.4px;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: clamp(26px, 3.4vw, 34px);
+            letter-spacing: -0.4px;
+        }
+
+        .subtle {
+            margin: 2px 0 0;
+            color: var(--muted);
+            max-width: 720px;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: 18px;
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+            backdrop-filter: blur(6px);
+        }
+
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            letter-spacing: -0.2px;
+        }
+
+        .athlete-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin: 10px 0 4px;
+        }
+
+        .athlete-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            border-radius: 14px;
+            padding: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: border 0.15s ease, transform 0.12s ease, background 0.12s ease;
+        }
+
+        .athlete-card.menu-open { z-index: 30; }
+
+        .athlete-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(117, 224, 179, 0.8);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .athlete-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(117, 224, 179, 0.6);
+        }
+
+        .athlete-name {
+            font-weight: 700;
+            font-size: 15px;
+            margin: 0;
+        }
+
+        .athlete-id {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 2px 0 6px;
+        }
+
+        .athlete-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--stroke);
+            border-radius: 10px;
+            color: var(--text);
+            padding: 6px 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .menu-dropdown {
+            position: absolute;
+            top: 36px;
+            right: 0;
+            background: #112624;
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            padding: 6px;
+            display: none;
+            min-width: 170px;
+            z-index: 10;
+        }
+
+        .menu-dropdown.open { display: block; }
+
+        .menu-item {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: var(--text);
+            border: none;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-item:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 100;
+        }
+
+        .modal-backdrop.show { display: flex; }
+
+        .modal {
+            background: #0f1f1e;
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            width: min(600px, 100%);
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 14px 38px rgba(0, 0, 0, 0.36);
+        }
+
+        .modal-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--stroke);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .modal-body {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid var(--stroke);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 220px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            color: var(--text);
+            padding: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 720px) {
+            .modal { width: 100%; }
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 15px;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #0b3f3a;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        .primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .ghost {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--stroke);
+        }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            color: var(--text);
+            padding: 0;
+            transition: transform 0.12s ease, border 0.15s ease, background 0.15s ease;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(154, 223, 159, 0.8);
+        }
+
+        .icon-btn.danger {
+            color: var(--danger);
+            border-color: rgba(255, 123, 123, 0.45);
+        }
+
+        .icon-btn.on-card {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .workout-list {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .workout-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            border-radius: 14px;
+            padding: 12px;
+            padding-right: 52px; /* ruimte voor delete-icoon rechtsboven */
+            text-align: left;
+            color: var(--text);
+            transition: border 0.15s ease, transform 0.12s ease, background 0.12s ease;
+            position: relative;
+        }
+
+        .workout-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(154, 223, 159, 0.9);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .workout-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(154, 223, 159, 0.6);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .badge.accent { background: rgba(154, 223, 159, 0.2); color: var(--text); }
+        .badge.dim { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+
+        .title {
+            font-weight: 700;
+            font-size: 16px;
+            margin: 6px 0;
+            letter-spacing: -0.1px;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .error {
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            font-size: 14px;
+        }
+
+        .status[data-tone="success"] { border-color: rgba(140, 226, 176, 0.6); color: var(--success); }
+        .status[data-tone="error"] { border-color: rgba(255, 123, 123, 0.6); color: var(--danger); }
+        .status[data-tone="warn"] { border-color: rgba(154, 223, 159, 0.6); color: var(--accent); }
+
+        pre {
+            background: rgba(11, 35, 32, 0.8);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--stroke);
+            color: #d8f4e2;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 6px;
+        }
+
+        .pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            font-size: 13px;
+            color: var(--muted);
+            width: fit-content;
+        }
+
+        .dropzone {
+            margin-top: 12px;
+            border: 1.5px dashed var(--stroke);
+            border-radius: 16px;
+            padding: 14px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.04);
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .dropzone.dragover {
+            border-color: var(--accent);
+            background: rgba(154, 223, 159, 0.12);
+        }
+
+        .dropzone p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 720px) {
+            header { grid-template-columns: 1fr; }
+            .row { flex-direction: column; align-items: stretch; }
+            .actions { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <a class="logo-block" href="https://www.runyourpace.be" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+                <div class="logo-mark">
+                    <div class="logo-text">RunYour<br>Pace</div>
+                </div>
+            </a>
+            <div>
+                <h1>Push workouts naar Intervals.icu</h1>
+                <p class="subtle">
+                    Kies je Athlete ID, upload of selecteer een workoutbestand uit de Workouts map en push in één klik.
+                    Nieuwe files worden na de push automatisch naar <code>Workouts/WorkoutsArchive</code> verplaatst.
+                </p>
+            </div>
+        </header>
+
+        <div class="grid">
+            <section class="card">
+                <h2>1. Kies Athlete ID</h2>
+                <div class="pill" style="margin-bottom:6px;">Search</div>
+                <input id="athleteSearch" type="text" placeholder="Zoek op naam of ID..." style="margin-bottom:12px;">
+
+                <div class="pill" style="margin-bottom:6px;">Select</div>
+                <div class="athlete-grid" id="athleteChips"></div>
+                <label for="athleteId">Of vul een Athlete ID in</label>
+                <input id="athleteId" type="text" placeholder="bv. i123456" style="margin-bottom:12px;">
+
+                <div class="pill" style="margin-bottom:6px;">Add</div>
+                <div class="row" style="gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                    <input id="athleteNameNew" type="text" placeholder="Nieuwe naam" style="flex:1; min-width:160px;">
+                    <input id="athleteIdNew" type="text" placeholder="Nieuwe Athlete ID" style="flex:1; min-width:160px;">
+                </div>
+                <button class="ghost" type="button" id="addAthleteBtn">Voeg atleet toe</button>
+                <div class="pill" id="selectedAthlete">Geen ID gekozen.</div>
+            </section>
+
+            <section class="card">
+                <div class="actions">
+                    <div>
+                        <h2 style="margin-bottom:4px;">2. Workouts</h2>
+                        <p class="muted" style="margin:0;">Upload een nieuwe .json of selecteer een bestaande file uit <code>Workouts/</code>.</p>
+                    </div>
+                    <button class="ghost" id="refreshBtn" type="button">Refresh lijst</button>
+                </div>
+                <div style="margin-top:6px; margin-bottom:8px;">
+                    <a href="https://chatgpt.com/g/g-67bc4e3647f08191ba0d797b797c4d47-runyourpaceassistant" target="_blank" rel="noopener noreferrer" class="ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                        <span style="font-weight:700;">Creëer je workout file</span>
+                        <span class="muted" style="font-size:12px;">opent in nieuw tabblad</span>
+                    </a>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+                    <button class="ghost" type="button" id="pickFileBtn">Upload bestand (.json)</button>
+                    <button class="ghost" type="button" id="openPasteBtn">Plak workout code</button>
+                    <input type="file" id="fileInput" accept=".json" style="display:none;">
+                </div>
+                <div class="dropzone" id="dropzone">
+                    <strong>Drop hier je .json file</strong>
+                    <p>of klik om te kiezen</p>
+                </div>
+                <div class="pill" style="margin-top:8px; margin-bottom:6px;">Huidige workouts in Workouts/</div>
+                <div class="workout-list" id="workoutList"></div>
+                <div class="pill" id="selectedWorkout">Nog niets geselecteerd.</div>
+            </section>
+        </div>
+
+        <section class="card" style="margin-top:16px;">
+            <div class="actions">
+                <div>
+                    <h2 style="margin:0;">3. Push naar Intervals.icu</h2>
+                    <p class="muted" style="margin:0;">Controleer selectie en verstuur.</p>
+                </div>
+                <button class="primary" id="pushBtn" type="button">Push workouts</button>
+            </div>
+            <div class="status" id="statusBar" data-tone="info">Nog niet gepusht.</div>
+            <div style="margin-top:10px;">
+                <label class="muted" style="margin-bottom:6px; display:block;">API response</label>
+                <pre id="responseBox">Nog geen request verstuurd.</pre>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal-backdrop" id="pasteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 style="margin:0; font-size:16px;">Plak workout code</h3>
+                <button class="icon-btn" type="button" id="closePasteModal" aria-label="Sluiten">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="pasteFilename">Bestandsnaam (.json)</label>
+                <input id="pasteFilename" type="text" placeholder="voorbeeld.json">
+                <label for="pasteContent">Workout code (JSON)</label>
+                <textarea id="pasteContent" placeholder='[{"date": "2025-12-18", "name": "...", "duration_minutes": 50, "description": "..."}]'></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="ghost" type="button" id="cancelPaste">Annuleer</button>
+                <button class="primary" type="button" id="submitPaste">Opslaan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chipsContainer = document.getElementById("athleteChips");
+        const athleteInput = document.getElementById("athleteId");
+        const athleteSearch = document.getElementById("athleteSearch");
+        const athleteNameNew = document.getElementById("athleteNameNew");
+        const athleteIdNew = document.getElementById("athleteIdNew");
+        const addAthleteBtn = document.getElementById("addAthleteBtn");
+        const selectedAthlete = document.getElementById("selectedAthlete");
+        const workoutList = document.getElementById("workoutList");
+        const selectedWorkout = document.getElementById("selectedWorkout");
+        const refreshBtn = document.getElementById("refreshBtn");
+        const pushBtn = document.getElementById("pushBtn");
+        const statusBar = document.getElementById("statusBar");
+        const responseBox = document.getElementById("responseBox");
+        const dropzone = document.getElementById("dropzone");
+        const fileInput = document.getElementById("fileInput");
+        const pickFileBtn = document.getElementById("pickFileBtn");
+        const openPasteBtn = document.getElementById("openPasteBtn");
+        const pasteModal = document.getElementById("pasteModal");
+        const closePasteModal = document.getElementById("closePasteModal");
+        const cancelPaste = document.getElementById("cancelPaste");
+        const submitPaste = document.getElementById("submitPaste");
+        const pasteFilename = document.getElementById("pasteFilename");
+        const pasteContent = document.getElementById("pasteContent");
+
+        let workoutFiles = [];
+        let chosenPath = null;
+        let athletesAll = [];
+        const trashIcon = `
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+        `;
+        const externalIcon = `
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+        `;
+        const downloadIcon = `
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+        `;
+
+        function setStatus(message, tone = "info") {
+            statusBar.textContent = message;
+            statusBar.dataset.tone = tone;
+        }
+
+        function formatRange(file) {
+            if (!file.start_date && !file.end_date) return "Geen datums gevonden";
+            if (file.start_date === file.end_date) return file.start_date;
+            return `${file.start_date || "?"} → ${file.end_date || "?"}`;
+        }
+
+        function renderAthletes(list) {
+            chipsContainer.innerHTML = "";
+            const selectedId = athleteInput.value.trim();
+            const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name, "nl", { sensitivity: "base" }));
+            sorted.forEach(({ name, id }) => {
+                const card = document.createElement("div");
+                card.className = "athlete-card";
+                if (selectedId && selectedId === id) {
+                    card.classList.add("selected");
+                }
+
+                card.addEventListener("click", () => {
+                    athleteInput.value = id;
+                    selectedAthlete.textContent = `Gekozen: ${name} (${id})`;
+                    renderAthletes(filterAthletes(athleteSearch.value));
+                });
+
+                const title = document.createElement("p");
+                title.className = "athlete-name";
+                title.textContent = name;
+
+                const meta = document.createElement("p");
+                meta.className = "athlete-id";
+                meta.textContent = id;
+
+                const actionsWrap = document.createElement("div");
+                actionsWrap.className = "athlete-actions";
+
+                const menuBtn = document.createElement("button");
+                menuBtn.type = "button";
+                menuBtn.className = "menu-btn";
+                menuBtn.innerHTML = "&#8942;";
+
+                const menu = document.createElement("div");
+                menu.className = "menu-dropdown";
+
+                const closeMenus = () => {
+                    document.querySelectorAll(".menu-dropdown.open").forEach((el) => el.classList.remove("open"));
+                    document.querySelectorAll(".athlete-card.menu-open").forEach((el) => el.classList.remove("menu-open"));
+                };
+
+                menuBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const isOpen = menu.classList.contains("open");
+                    closeMenus();
+                    if (!isOpen) {
+                        menu.classList.add("open");
+                        card.classList.add("menu-open");
+                    }
+                });
+
+                const makeItem = (label, handler) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "menu-item";
+                    btn.textContent = label;
+                    btn.addEventListener("click", handler);
+                    return btn;
+                };
+
+                const openIntervals = () => {
+                    window.open(`https://intervals.icu/athlete/${encodeURIComponent(id)}/activities`, "_blank", "noopener,noreferrer");
+                };
+
+                const downloadHistory = async (kind) => {
+                    try {
+                        const label = kind === "activities" ? "activiteiten" : kind === "health" ? "health" : "plan";
+                        setStatus(`Download ${label} voor ${name}...`, "info");
+                        const data = await fetchJson(`/api/history?athleteId=${encodeURIComponent(id)}`);
+                        let payload;
+                        let filename;
+                        if (kind === "activities") {
+                            payload = { athleteId: data.athleteId, range: data.range, activities: data.activities || [] };
+                            filename = `activities_${id}_last90days.json`;
+                        } else if (kind === "health") {
+                            payload = { athleteId: data.athleteId, range: data.range, wellness: data.wellness || [] };
+                            filename = `health_${id}_last90days.json`;
+                        } else {
+                            payload = {
+                                athleteId: data.athleteId,
+                                eventsRange: data.eventsRange,
+                                events: data.events || [],
+                            };
+                            filename = `plan_${id}_past90_next180.json`;
+                        }
+                        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        setStatus(`Download ${label} klaar voor ${name}.`, "success");
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    } finally {
+                        closeMenus();
+                    }
+                };
+
+                const editAthlete = async () => {
+                    const newName = prompt("Nieuwe naam voor atleet:", name) || "";
+                    if (!newName.trim()) return;
+                    const newId = prompt("Nieuwe Athlete ID:", id) || "";
+                    if (!newId.trim()) return;
+                    try {
+                        await fetchJson("/api/athletes", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name }),
+                        });
+                        await fetchJson("/api/athletes", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name: newName.trim(), id: newId.trim() }),
+                        });
+                        setStatus(`Atleet bijgewerkt: ${newName}`, "success");
+                        athleteInput.value = newId.trim();
+                        selectedAthlete.textContent = `Gekozen: ${newName} (${newId})`;
+                        await loadAthletes();
+                        renderAthletes(filterAthletes(athleteSearch.value));
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    } finally {
+                        closeMenus();
+                    }
+                };
+
+                const deleteAthlete = async () => {
+                    try {
+                        await fetchJson("/api/athletes", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name }),
+                        });
+                        setStatus(`Atleet verwijderd: ${name}`, "success");
+                        if (athleteInput.value && selectedAthlete.textContent.includes(name)) {
+                            athleteInput.value = "";
+                            selectedAthlete.textContent = "Geen ID gekozen.";
+                        }
+                        await loadAthletes();
+                        renderAthletes(filterAthletes(athleteSearch.value));
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    } finally {
+                        closeMenus();
+                    }
+                };
+
+                menu.appendChild(makeItem("Open Intervals.icu", (e) => { e.stopPropagation(); openIntervals(); closeMenus(); }));
+                menu.appendChild(makeItem("Download activity history", (e) => { e.stopPropagation(); downloadHistory("activities"); }));
+                menu.appendChild(makeItem("Download health history", (e) => { e.stopPropagation(); downloadHistory("health"); }));
+                menu.appendChild(makeItem("Download current plan", (e) => { e.stopPropagation(); downloadHistory("plan"); }));
+                menu.appendChild(makeItem("Edit naam & ID", (e) => { e.stopPropagation(); editAthlete(); }));
+                menu.appendChild(makeItem("Delete", (e) => { e.stopPropagation(); deleteAthlete(); }));
+
+                actionsWrap.appendChild(menuBtn);
+                actionsWrap.appendChild(menu);
+
+                card.appendChild(title);
+                card.appendChild(meta);
+                card.appendChild(actionsWrap);
+                chipsContainer.appendChild(card);
+            });
+        }
+
+        function renderWorkouts(list) {
+            workoutList.innerHTML = "";
+
+            if (!list.length) {
+                const empty = document.createElement("div");
+                empty.className = "muted";
+                empty.textContent = "Geen workout .json files gevonden.";
+                workoutList.appendChild(empty);
+                return;
+            }
+
+            list.forEach((file) => {
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "workout-card";
+                if (file.path === chosenPath) {
+                    card.classList.add("selected");
+                }
+
+                card.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <span class="badge ${file.location === "archive" ? "dim" : "accent"}">${file.location === "archive" ? "Archief" : "Nieuw"}</span>
+                        <span class="meta">${file.count ?? "?"} items</span>
+                    </div>
+                    <div class="title">${file.name}</div>
+                    <div class="meta">${formatRange(file)}</div>
+                    ${file.error ? `<div class="error">⚠ ${file.error}</div>` : ""}
+                `;
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "icon-btn danger on-card";
+                deleteBtn.innerHTML = trashIcon;
+                deleteBtn.title = `Verwijder ${file.name}`;
+                deleteBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    try {
+                        await fetchJson("/api/workouts", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ workoutPath: file.path }),
+                        });
+                        setStatus(`Workout verwijderd: ${file.name}`, "success");
+                        if (chosenPath === file.path) {
+                            chosenPath = null;
+                            selectedWorkout.textContent = "Nog niets geselecteerd.";
+                        }
+                        await loadWorkouts();
+                    } catch (err) {
+                        setStatus(err.message, "error");
+                        responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+                    }
+                });
+
+                card.addEventListener("click", () => {
+                    chosenPath = file.path;
+                    selectedWorkout.textContent = `Gekozen: ${file.name}`;
+                    renderWorkouts(workoutFiles);
+                });
+
+                card.appendChild(deleteBtn);
+                workoutList.appendChild(card);
+            });
+        }
+
+        async function fetchJson(url, options) {
+            const res = await fetch(url, options);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const err = new Error(data.error || `Request mislukt (${res.status})`);
+                err.details = data;
+                throw err;
+            }
+            return data;
+        }
+
+        function openPaste() {
+            pasteFilename.value = "";
+            pasteContent.value = "";
+            pasteModal.classList.add("show");
+        }
+
+        function closePaste() {
+            pasteModal.classList.remove("show");
+        }
+
+        async function uploadFile(file) {
+            if (!file.name.toLowerCase().endsWith(".json")) {
+                setStatus("Alleen .json files zijn toegestaan.", "warn");
+                return;
+            }
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+            setStatus(`Uploaden: ${file.name}...`, "info");
+            try {
+                await fetchJson("/api/upload", { method: "POST", body: formData });
+                setStatus("Upload gelukt. Lijst verversen...", "success");
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        }
+
+        async function loadAthletes() {
+            try {
+                const data = await fetchJson("/api/athletes");
+                athletesAll = data.athletes || [];
+                renderAthletes(athletesAll);
+            } catch (err) {
+                setStatus(err.message, "error");
+            }
+        }
+
+        function filterAthletes(term) {
+            const t = term.trim().toLowerCase();
+            if (!t) return athletesAll;
+            return athletesAll.filter((a) => a.name.toLowerCase().includes(t) || a.id.toLowerCase().includes(t));
+        }
+
+        async function loadWorkouts() {
+            setStatus("Workouts laden...", "info");
+            try {
+                const data = await fetchJson("/api/workouts");
+                workoutFiles = data.files || [];
+                renderWorkouts(workoutFiles);
+                setStatus("Workouts geladen.", "success");
+            } catch (err) {
+                setStatus(err.message, "error");
+            }
+        }
+
+        async function pushWorkouts() {
+            const athleteId = athleteInput.value.trim();
+            if (!athleteId) {
+                setStatus("Vul eerst een Athlete ID in.", "warn");
+                return;
+            }
+            if (!chosenPath) {
+                setStatus("Kies een workoutfile.", "warn");
+                return;
+            }
+
+            pushBtn.disabled = true;
+            setStatus("Workouts worden verstuurd...", "info");
+            responseBox.textContent = "Bezig met request...";
+
+            try {
+                const payload = { athleteId, workoutPath: chosenPath };
+                const result = await fetchJson("/api/push", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                setStatus("Push gelukt.", "success");
+                const summary = {
+                    apiStatus: result.apiStatus,
+                    archivedTo: result.archivedTo,
+                    archiveError: result.archiveError,
+                };
+                responseBox.textContent = JSON.stringify(result.apiBody || summary, null, 2);
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            } finally {
+                pushBtn.disabled = false;
+            }
+        }
+
+        refreshBtn.addEventListener("click", loadWorkouts);
+        pushBtn.addEventListener("click", pushWorkouts);
+        athleteInput.addEventListener("input", () => {
+            const value = athleteInput.value.trim();
+            selectedAthlete.textContent = value ? `Gekozen ID: ${value}` : "Geen ID gekozen.";
+        });
+        athleteSearch.addEventListener("input", () => {
+            renderAthletes(filterAthletes(athleteSearch.value));
+        });
+
+        addAthleteBtn.addEventListener("click", async () => {
+            const name = athleteNameNew.value.trim();
+            const id = athleteIdNew.value.trim();
+            if (!name || !id) {
+                setStatus("Naam en Athlete ID zijn verplicht om toe te voegen.", "warn");
+                return;
+            }
+            try {
+                await fetchJson("/api/athletes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, id }),
+                });
+                setStatus("Atleet toegevoegd.", "success");
+                athleteNameNew.value = "";
+                athleteIdNew.value = "";
+                await loadAthletes();
+                renderAthletes(filterAthletes(athleteSearch.value));
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        });
+
+        openPasteBtn.addEventListener("click", () => openPaste());
+        closePasteModal.addEventListener("click", () => closePaste());
+        cancelPaste.addEventListener("click", () => closePaste());
+        submitPaste.addEventListener("click", async () => {
+            const filename = pasteFilename.value.trim();
+            const content = pasteContent.value;
+            if (!filename || !filename.toLowerCase().endsWith(".json")) {
+                setStatus("Bestandsnaam moet op .json eindigen.", "warn");
+                return;
+            }
+            if (!content.trim()) {
+                setStatus("Plak eerst de workout code.", "warn");
+                return;
+            }
+            setStatus(`Opslaan ${filename}...`, "info");
+            try {
+                await fetchJson("/api/upload-text", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename, content }),
+                });
+                setStatus("Code opgeslagen. Lijst verversen...", "success");
+                closePaste();
+                await loadWorkouts();
+            } catch (err) {
+                setStatus(err.message, "error");
+                responseBox.textContent = err.details ? JSON.stringify(err.details, null, 2) : err.message;
+            }
+        });
+
+        pickFileBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => {
+            const [file] = fileInput.files;
+            if (file) uploadFile(file);
+            fileInput.value = "";
+        });
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove("dragover");
+            });
+        });
+
+        dropzone.addEventListener("drop", (e) => {
+            const [file] = e.dataTransfer.files;
+            if (file) uploadFile(file);
+        });
+
+        dropzone.addEventListener("click", () => fileInput.click());
+
+        loadAthletes();
+        loadWorkouts();
+
+        // Sluit openstaande menu's bij klik elders
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".menu-dropdown") && !e.target.closest(".menu-btn")) {
+                document.querySelectorAll(".menu-dropdown.open").forEach((el) => el.classList.remove("open"));
+            }
+        });
+    </script>
+</body>
+</html>

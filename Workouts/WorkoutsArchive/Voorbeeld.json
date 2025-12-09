@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-01-01",
+    "name": "Interval 4x3m Z3",
+    "duration_minutes": 40,
+    "description": "Warmup\n- 10m Z1 HR\n\nMain Set\n4x\n- 3m Z3 HR\n- 2m Z1 HR\n\nCooldown\n- 10m Z1 HR"
+  },
+  {
+    "date": "2026-01-03",
+    "name": "Interval 6x2m Z4",
+    "duration_minutes": 44,
+    "description": "Warmup\n- 10m Z1 HR\n\nMain Set\n6x\n- 2m Z4 HR\n- 2m Z1 HR\n\nCooldown\n- 10m Z1 HR"
+  }
+]
