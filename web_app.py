@@ -589,6 +589,46 @@ def api_intake():
     return jsonify({"ok": True, "reply": reply})
 
 
+@app.post("/api/schema-chat")
+def api_schema_chat():
+    """Vrije chat met de SchemaMaker agent (zonder intake-flow)."""
+    payload = request.get_json(force=True, silent=True) or {}
+    message = str(payload.get("message", "")).strip()
+    transcript = payload.get("transcript") or []
+
+    if not message:
+        return jsonify({"error": "Bericht is verplicht."}), 400
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Agent niet beschikbaar: OPENAI_API_KEY ontbreekt."}), 500
+    if agent_setup_error or run_workflow is None or WorkflowInput is None:
+        return jsonify({"error": f"Schema agent niet beschikbaar: {agent_setup_error or 'initialisatie mislukt.'}"}), 500
+
+    transcript_lines = []
+    for item in transcript:
+        role = item.get("role", "user")
+        text = item.get("text", "")
+        transcript_lines.append(f"{role}: {text}")
+    prefix = ""
+    if transcript_lines:
+        prefix = "Eerder gesprek over schema:\n" + "\n".join(transcript_lines) + "\n\nVervolg:\n"
+
+    try:
+        reply = asyncio.run(run_workflow(WorkflowInput(input_as_text=f"{prefix}{message}")))
+    except Exception as exc:  # noqa: BLE001
+        return (
+            jsonify(
+                {
+                    "error": f"Schema-chat mislukt: {exc}",
+                    "agent_setup_error": agent_setup_error,
+                    "openai_key_present": bool(os.getenv("OPENAI_API_KEY")),
+                }
+            ),
+            500,
+        )
+
+    return jsonify({"ok": True, "reply": reply})
+
+
 @app.post("/api/schedule-table")
 def api_schedule_table():
     """Vraag de SchemaMaker agent om een tabelvormig schema te maken op basis van het intakeverslag."""
@@ -642,6 +682,70 @@ def api_schedule_json_push():
         json_reply = asyncio.run(run_workflow(WorkflowInput(input_as_text=json_prompt)))
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": f"JSON-conversie mislukt: {exc}"}), 500
+
+    try:
+        parsed = json.loads(json_reply)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Kon JSON niet parsen: {exc}", "raw": json_reply}), 400
+
+    if not isinstance(parsed, list):
+        return jsonify({"error": "JSON moet een array van workouts zijn.", "raw": json_reply}), 400
+
+    os.environ["ATHLETE_ID"] = athlete_id
+    WORKOUTS.clear()
+    WORKOUTS.extend(parsed)
+
+    try:
+        response = push_workouts_to_intervals()
+        api_status = response.status_code if response is not None else None
+        try:
+            api_body = response.json() if response is not None else None
+        except Exception:  # noqa: BLE001
+            api_body = response.text if response is not None else None
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Upload mislukt: {exc}", "jsonReply": json_reply}), 500
+
+    return jsonify({"ok": True, "json": parsed, "jsonReply": json_reply, "apiStatus": api_status, "apiBody": api_body})
+
+
+@app.post("/api/schema-json-chat-push")
+def api_schema_json_chat_push():
+    """
+    Zet de vrije schema-chat om naar JSON en push naar Intervals.icu.
+    Verwacht: athleteId, transcript (lijst met role/text).
+    """
+    payload = request.get_json(force=True, silent=True) or {}
+    athlete_id = str(payload.get("athleteId", "")).strip()
+    transcript = payload.get("transcript") or []
+
+    if not athlete_id:
+        return jsonify({"error": "Athlete ID ontbreekt."}), 400
+    if not transcript:
+        return jsonify({"error": "Geen gesprek om te converteren."}), 400
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "OPENAI_API_KEY ontbreekt."}), 500
+    if agent_setup_error or run_workflow is None or WorkflowInput is None:
+        return jsonify({"error": f"Schema agent niet beschikbaar: {agent_setup_error or 'initialisatie mislukt.'}"}), 500
+
+    transcript_lines = []
+    for item in transcript:
+        role = item.get("role", "user")
+        text = item.get("text", "")
+        transcript_lines.append(f"{role}: {text}")
+
+    convo_text = "\n".join(transcript_lines)
+    json_prompt = (
+        "Zet dit gesprek direct om naar een JSON array met workouts volgens de Intervals.icu richtlijn "
+        "(velden: date, name, duration_minutes, description). "
+        "Antwoord ALLEEN met de JSON-array (beginnend met [ en eindigend met ]), geen uitleg of tekst eromheen. "
+        "Gesprek:\n\n"
+        f"{convo_text}"
+    )
+
+    try:
+        json_reply = asyncio.run(run_workflow(WorkflowInput(input_as_text=json_prompt)))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Schema-chat mislukt: {exc}"}), 500
 
     try:
         parsed = json.loads(json_reply)

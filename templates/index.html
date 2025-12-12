@@ -239,6 +239,51 @@
             color: var(--muted);
         }
 
+        .toggle-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .toggle-option {
+            border: 1px solid var(--stroke);
+            background: #f7f7f7;
+            border-radius: 12px;
+            padding: 12px 14px;
+            text-align: left;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text);
+            font-weight: 600;
+            transition: border 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease, background 0.12s ease;
+        }
+
+        .toggle-option .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid var(--text);
+            background: transparent;
+            flex-shrink: 0;
+            transition: background 0.12s ease, border-color 0.12s ease;
+        }
+
+        .toggle-option.active {
+            border-color: #000;
+            background: #111;
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .toggle-option.active .dot {
+            background: #fff;
+            border-color: #fff;
+        }
+
         input[type="text"] {
             width: 100%;
             background: #ffffff;
@@ -550,6 +595,7 @@
             </div>
         </header>
 
+        <div id="intakeFlow">
         <div class="grid">
             <section class="card step active" data-step="0">
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -559,8 +605,18 @@
                 <p class="muted" style="margin:0 0 8px;">Geef de Intervals.icu Athlete ID.</p>
                 <input id="athleteId" type="text" placeholder="bv. i123456" style="margin-bottom:12px;">
                 <div class="pill" id="selectedAthlete">Geen ID gekozen.</div>
+                <div class="toggle-group" role="group" aria-label="Kies werkwijze">
+                    <button class="toggle-option active" type="button" data-flow-toggle value="intake">
+                        <span class="dot" aria-hidden="true"></span>
+                        Ik doe een intake gesprek
+                    </button>
+                    <button class="toggle-option" type="button" data-flow-toggle value="schema">
+                        <span class="dot" aria-hidden="true"></span>
+                        Ik maak meteen een schema
+                    </button>
+                </div>
                 <div class="step-nav" style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
-                    <button class="primary" type="button" data-next-step>Volgende</button>
+                    <button class="primary" type="button" id="nextFromAthlete">Volgende</button>
                 </div>
             </section>
 
@@ -635,15 +691,36 @@
                 <button class="ghost" type="button" data-start-step>Terug naar start</button>
                 <button class="primary" type="button" data-prev-step>Vorige</button>
             </div>
-        </section>
-    </div>
+            </section>
+        </div>
 
-    <footer style="margin:24px auto 32px; text-align:center;">
-        <a href="https://www.runyourpace.be" target="_blank" rel="noopener noreferrer" class="logo-block" style="justify-content:center; margin-bottom:6px; text-decoration:none; color:inherit;">
+        <footer style="margin:24px auto 32px; text-align:center;">
+            <a href="https://www.runyourpace.be" target="_blank" rel="noopener noreferrer" class="logo-block" style="justify-content:center; margin-bottom:6px; text-decoration:none; color:inherit;">
             <span class="muted" style="text-transform:uppercase; letter-spacing:0.06em; font-size:12px; margin-right:6px;">Powered by</span>
             <span style="font-weight:800; font-size:18px;">RunYourPace</span>
-        </a>
-    </footer>
+            </a>
+        </footer>
+        </div>
+
+        <div id="schemaFlow" style="display:none;">
+            <section class="card step active" data-step="schema">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <h2 style="margin:0;">Schema maker</h2>
+                </div>
+                <p class="muted" style="margin:0 0 8px;">Chat met de SchemaMaker agent om direct een schema te laten opstellen.</p>
+                <div class="section-label">Gesprek</div>
+                <div id="schemaLog" class="chat-log"></div>
+                <textarea id="schemaMessage" placeholder="Typ je vraag of info voor Schema maker..." style="width:100%; min-height:80px; max-height:140px; margin:10px 0;"></textarea>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                    <button class="ghost" type="button" id="schemaSendBtn">Stuur bericht</button>
+                    <span class="muted" id="schemaStatus">Nog niets verstuurd.</span>
+                </div>
+                <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
+                    <button class="ghost" type="button" id="schemaBackBtn">Terug naar start</button>
+                    <button class="primary" type="button" id="schemaFlowPushBtn">Schema pushen</button>
+                </div>
+            </section>
+        </div>
 
     <script>
         const athleteInput = document.getElementById("athleteId");
@@ -656,16 +733,31 @@
         const intakeStatus = document.getElementById("intakeStatus");
         const intakeLog = document.getElementById("intakeLog");
         const intakeReport = document.getElementById("intakeReport");
-        const steps = Array.from(document.querySelectorAll("[data-step]"));
+        const steps = Array.from(document.querySelectorAll("[data-step]")).filter(
+            (el) => el.dataset.step !== "schema"
+        );
         const scheduleStatus = document.getElementById("scheduleStatus");
         const scheduleTable = document.getElementById("scheduleTable");
         const pushSchemaBtn = document.getElementById("pushSchemaBtn");
         const requestReportNextBtn = document.getElementById("requestReportNextBtn");
         const askScheduleBtn = document.getElementById("askScheduleBtn");
+        const flowToggles = Array.from(document.querySelectorAll("[data-flow-toggle]"));
+        const intakeFlow = document.getElementById("intakeFlow");
+        const schemaFlow = document.getElementById("schemaFlow");
+        const nextFromAthlete = document.getElementById("nextFromAthlete");
+        const schemaBackBtn = document.getElementById("schemaBackBtn");
+        const schemaLog = document.getElementById("schemaLog");
+        const schemaMessage = document.getElementById("schemaMessage");
+        const schemaSendBtn = document.getElementById("schemaSendBtn");
+        const schemaStatus = document.getElementById("schemaStatus");
+        const schemaFlowPushBtn = document.getElementById("schemaFlowPushBtn");
 
         const intakeHistory = [];
+        const schemaHistory = [];
         let lastScheduleTable = "";
         let isGeneratingSchedule = false;
+        let selectedFlow = "intake";
+        let activeFlow = "intake";
 
         async function fetchJson(url, options) {
             const res = await fetch(url, options);
@@ -708,6 +800,114 @@
 
         function setIntakeStatus(text) {
             intakeStatus.textContent = text;
+        }
+
+        function renderSchemaLog() {
+            if (!schemaLog) return;
+            if (!schemaHistory.length) {
+                schemaLog.textContent = "Geen berichten.";
+                updateSchemaPushAvailability();
+                return;
+            }
+            const typing = document.getElementById("schemaTyping");
+            schemaLog.innerHTML = "";
+            schemaHistory.forEach((item) => {
+                const block = document.createElement("div");
+                block.className = `chat-item ${item.role === "user" ? "user" : "agent"}`;
+
+                const role = document.createElement("div");
+                role.className = "chat-role";
+                role.textContent = item.role === "user" ? "Jij" : "SchemaMaker";
+
+                const bubble = document.createElement("div");
+                bubble.className = "chat-bubble";
+                if (item.role !== "user") bubble.classList.add("agent");
+                bubble.innerHTML =
+                    item.role === "user" ? escapeHtml(item.text) : formatAgentMessage(item.text);
+
+                block.appendChild(role);
+                block.appendChild(bubble);
+                schemaLog.appendChild(block);
+            });
+            if (typing) schemaLog.appendChild(typing);
+            schemaLog.scrollTop = schemaLog.scrollHeight;
+            updateSchemaPushAvailability();
+        }
+
+        function setSchemaStatus(text) {
+            if (schemaStatus) schemaStatus.textContent = text;
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function formatAgentMessage(raw) {
+            if (!raw) return "";
+            // Strip ongewenste filecite tokens en turnXfileY referenties
+            const noCites = raw
+                .replace(/filecite/gi, "")
+                .replace(/turn\d+file\d+/gi, "");
+            const escaped = escapeHtml(noCites);
+            const bolded = escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+            const withBreaks = bolded
+                .replace(/\n{2,}/g, "</p><p>")
+                .replace(/\n/g, "<br>");
+            return `<p>${withBreaks}</p>`;
+        }
+
+        function setSchemaLoading(state) {
+            if (!schemaLog) return;
+            let typing = document.getElementById("schemaTyping");
+            if (state) {
+                if (!typing) {
+                    typing = document.createElement("div");
+                    typing.id = "schemaTyping";
+                    typing.className = "chat-item typing";
+                    typing.textContent = "🏃‍♂️ Agent antwoordt...";
+                    schemaLog.appendChild(typing);
+                }
+                typing.style.display = "inline-flex";
+                schemaLog.scrollTop = schemaLog.scrollHeight;
+            } else if (typing) {
+                typing.style.display = "none";
+            }
+        }
+
+        async function sendSchemaMessage() {
+            if (!schemaMessage || !schemaSendBtn) return;
+            const message = schemaMessage.value.trim();
+            if (!message) {
+                setSchemaStatus("Typ eerst een bericht.");
+                return;
+            }
+            schemaHistory.push({ role: "user", text: message });
+            renderSchemaLog();
+            schemaMessage.value = "";
+            schemaSendBtn.disabled = true;
+            setSchemaStatus("Agent request loopt...");
+            setSchemaLoading(true);
+            try {
+                const res = await fetchJson("/api/schema-chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message, transcript: schemaHistory }),
+                });
+                schemaHistory.push({ role: "agent", text: res.reply || "(geen antwoord)" });
+                renderSchemaLog();
+                setSchemaStatus("Antwoord ontvangen.");
+            } catch (err) {
+                setSchemaStatus(err.message);
+            } finally {
+                schemaSendBtn.disabled = false;
+                setSchemaLoading(false);
+                updateSchemaPushAvailability();
+            }
         }
 
         async function sendIntakeMessage() {
@@ -802,10 +1002,38 @@
         }
 
         function updateProgress() {
-            const percent = ((currentStep + 1) / steps.length) * 100;
             const bar = document.getElementById("progressFill");
-            if (bar) {
-                bar.style.width = `${percent}%`;
+            if (!bar) return;
+            if (activeFlow !== "intake") {
+                bar.style.width = "100%";
+                return;
+            }
+            const percent = ((currentStep + 1) / steps.length) * 100;
+            bar.style.width = `${percent}%`;
+        }
+
+        function setFlowSelection(flow) {
+            selectedFlow = flow;
+            flowToggles.forEach((b) => b.classList.toggle("active", b.value === flow));
+        }
+
+        function switchFlow(flow) {
+            activeFlow = flow;
+            const isIntake = flow === "intake";
+            intakeFlow.style.display = isIntake ? "" : "none";
+            schemaFlow.style.display = isIntake ? "none" : "";
+            if (isIntake) {
+                showStep(0);
+            } else {
+                currentStep = 0;
+                renderSchemaLog();
+            }
+            updateProgress();
+        }
+
+        function updateSchemaPushAvailability() {
+            if (schemaFlowPushBtn) {
+                schemaFlowPushBtn.disabled = schemaHistory.length === 0;
             }
         }
 
@@ -836,6 +1064,7 @@
             scheduleStatus.textContent = "Schema wordt opgehaald...";
             isGeneratingSchedule = true;
             pushSchemaBtn.disabled = true;
+            if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
             scheduleTable.textContent = "🏃‍♂️ Schema wordt geladen...";
             try {
                 const res = await fetchJson("/api/schedule-table", {
@@ -847,6 +1076,7 @@
                 scheduleTable.textContent = lastScheduleTable || "(geen schema)";
                 scheduleStatus.textContent = "Schema ontvangen.";
                 pushSchemaBtn.disabled = !lastScheduleTable;
+                if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = !lastScheduleTable;
             } catch (err) {
                 scheduleStatus.textContent = err.message;
             } finally {
@@ -855,6 +1085,10 @@
         }
 
         async function approveAndPush() {
+            if (activeFlow === "schema") {
+                await pushSchemaFromSchemaFlow();
+                return;
+            }
             const athleteId = athleteInput.value.trim();
             if (!athleteId) {
                 scheduleStatus.textContent = "Vul eerst een Athlete ID in (stap 1).";
@@ -866,6 +1100,7 @@
             }
             scheduleStatus.textContent = "Schema wordt omgezet naar JSON en gepusht...";
             pushSchemaBtn.disabled = true;
+            if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
             try {
                 const res = await fetchJson("/api/schedule-json-push", {
                     method: "POST",
@@ -879,6 +1114,34 @@
                 scheduleStatus.textContent = err.message;
             } finally {
                 pushSchemaBtn.disabled = false;
+                if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = false;
+            }
+        }
+
+        async function pushSchemaFromSchemaFlow() {
+            const athleteId = athleteInput.value.trim();
+            if (!athleteId) {
+                setSchemaStatus("Vul eerst een Athlete ID in.");
+                return;
+            }
+            if (!schemaHistory.length) {
+                setSchemaStatus("Geen gesprek beschikbaar om te pushen.");
+                return;
+            }
+            setSchemaStatus("Schema wordt omgezet naar JSON en gepusht...");
+            if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
+            try {
+                const res = await fetchJson("/api/schema-json-chat-push", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ athleteId, transcript: schemaHistory }),
+                });
+                setSchemaStatus(`Push uitgevoerd (status ${res.apiStatus}).`);
+                summaryWorkout.textContent = "Schema gepusht via SchemaMaker";
+            } catch (err) {
+                setSchemaStatus(err.message);
+            } finally {
+                if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = false;
             }
         }
 
@@ -899,28 +1162,66 @@
             await generateSchedule();
         });
         pushSchemaBtn.addEventListener("click", approveAndPush);
+        if (schemaFlowPushBtn) {
+            schemaFlowPushBtn.addEventListener("click", approveAndPush);
+        }
         intakeMessage.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendIntakeMessage();
             }
         });
+        if (schemaSendBtn) {
+            schemaSendBtn.addEventListener("click", sendSchemaMessage);
+        }
+        if (schemaMessage) {
+            schemaMessage.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendSchemaMessage();
+                }
+            });
+        }
         athleteInput.addEventListener("input", () => {
             const value = athleteInput.value.trim();
             selectedAthlete.textContent = value ? `Gekozen ID: ${value}` : "Geen ID gekozen.";
             summaryAthlete.textContent = value || "-";
         });
 
-        document.querySelectorAll("[data-next-step]").forEach((btn) => btn.addEventListener("click", goNextStep));
+        document
+            .querySelectorAll("[data-next-step]")
+            .forEach((btn) => btn.id !== "nextFromAthlete" && btn.addEventListener("click", goNextStep));
         document.querySelectorAll("[data-prev-step]").forEach((btn) => btn.addEventListener("click", goPrevStep));
         document.querySelectorAll("[data-start-step]").forEach((btn) => btn.addEventListener("click", goStart));
+        flowToggles.forEach((btn) =>
+            btn.addEventListener("click", () => {
+                setFlowSelection(btn.value);
+            })
+        );
+        if (nextFromAthlete) {
+            nextFromAthlete.addEventListener("click", () => {
+                if (selectedFlow === "schema") {
+                    switchFlow("schema");
+                } else {
+                    goNextStep();
+                }
+            });
+        }
+        if (schemaBackBtn) {
+            schemaBackBtn.addEventListener("click", () => {
+                setFlowSelection("intake");
+                switchFlow("intake");
+            });
+        }
 
-        showStep(0);
+        setFlowSelection("intake");
+        switchFlow("intake");
         summaryAthlete.textContent = athleteInput.value.trim() || "-";
-        updateProgress();
-
         scheduleStatus.textContent = "Nog geen schema opgevraagd.";
         pushSchemaBtn.disabled = true;
+        updateSchemaPushAvailability();
+        setSchemaStatus("Nog niets verstuurd.");
+        renderSchemaLog();
     </script>
 </body>
 </html>
