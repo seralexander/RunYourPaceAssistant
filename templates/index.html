@@ -574,16 +574,14 @@
                 <textarea id="intakeMessage" placeholder="Typ je vraag of info voor de agent..." style="width:100%; min-height:80px; max-height:140px; margin:10px 0;"></textarea>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                     <button class="ghost" type="button" id="intakeSendBtn">Stuur bericht</button>
-                    <button class="primary" type="button" id="intakeFinishBtn">Profiel compleet → Vraag verslag</button>
+                    <button class="primary" type="button" id="intakeFinishBtn">Profiel compleet</button>
                     <span class="muted" id="intakeStatus">Nog niets verstuurd.</span>
                 </div>
-                <div class="section-label" style="margin-top:12px;">Verslag</div>
-                <pre id="intakeReport" style="white-space:pre-wrap;">Nog geen verslag opgevraagd.</pre>
                 <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
                     <button class="ghost" type="button" data-start-step>Terug naar start</button>
                     <div style="display:flex; gap:8px;">
                         <button class="ghost" type="button" data-prev-step>Vorige</button>
-                        <button class="primary" type="button" data-next-step>Volgende</button>
+                        <button class="primary" type="button" data-next-step id="requestReportNextBtn">Volgende</button>
                     </div>
                 </div>
             </section>
@@ -591,27 +589,45 @@
             <section class="card step" data-step="2">
                 <div class="actions">
                     <div>
-                        <h2 style="margin-bottom:4px;">3. RunYourPace schema</h2>
-                        <p class="muted" style="margin:0;">We genereren automatisch een schema op basis van het intake-verslag. Keur goed en laat omzetten naar JSON + push.</p>
+                        <h2 style="margin-bottom:4px;">3. Verslag</h2>
+                        <p class="muted" style="margin:0;">Bekijk het gegenereerde verslag. Keur goed en vraag daarna het schema aan.</p>
+                    </div>
+                </div>
+                <div class="section-label" style="margin-top:4px; margin-bottom:6px;">Verslag</div>
+                <pre id="intakeReport" style="white-space:pre-wrap;">Nog geen verslag opgevraagd.</pre>
+                <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
+                    <button class="ghost" type="button" data-start-step>Terug naar start</button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="ghost" type="button" data-prev-step>Vorige</button>
+                        <button class="primary" type="button" id="askScheduleBtn">Schema aanmaken</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card step" data-step="3">
+                <div class="actions">
+                    <div>
+                        <h2 style="margin-bottom:4px;">4. Schema</h2>
+                        <p class="muted" style="margin:0;">Bekijk het schema op basis van het verslag en push naar Intervals.icu.</p>
                     </div>
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
                     <span class="muted" id="scheduleStatus">Nog geen schema opgevraagd.</span>
                 </div>
-                <div class="pill" style="margin-top:4px; margin-bottom:6px;">Schema (tabel)</div>
+                <div class="pill" style="margin-top:4px; margin-bottom:6px;">Schema</div>
                 <pre id="scheduleTable" style="white-space:pre-wrap;">-</pre>
                 <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
                     <button class="ghost" type="button" data-start-step>Terug naar start</button>
                     <div style="display:flex; gap:8px;">
                         <button class="ghost" type="button" data-prev-step>Vorige</button>
-                        <button class="primary" type="button" id="pushSchemaBtn" disabled>Push mijn schema</button>
+                        <button class="primary" type="button" id="pushSchemaBtn" disabled>Schema pushen</button>
                     </div>
                 </div>
             </section>
         </div>
 
-        <section class="card step" data-step="3" style="margin-top:16px;">
-            <h2 style="margin-bottom:6px;">4. Klaar</h2>
+        <section class="card step" data-step="4" style="margin-top:16px;">
+            <h2 style="margin-bottom:6px;">5. Klaar</h2>
             <p class="muted" style="margin-top:0;">Je hebt alle stappen doorlopen. Keer terug naar start of pas gegevens aan in vorige stappen.</p>
             <div class="pill">Athlete ID: <span id="summaryAthlete">-</span></div>
             <div class="pill" style="margin-top:8px;">Schema status: <span id="summaryWorkout">-</span></div>
@@ -644,6 +660,8 @@
         const scheduleStatus = document.getElementById("scheduleStatus");
         const scheduleTable = document.getElementById("scheduleTable");
         const pushSchemaBtn = document.getElementById("pushSchemaBtn");
+        const requestReportNextBtn = document.getElementById("requestReportNextBtn");
+        const askScheduleBtn = document.getElementById("askScheduleBtn");
 
         const intakeHistory = [];
         let lastScheduleTable = "";
@@ -866,6 +884,20 @@
 
         intakeSendBtn.addEventListener("click", sendIntakeMessage);
         intakeFinishBtn.addEventListener("click", requestIntakeReport);
+        requestReportNextBtn.addEventListener("click", async () => {
+            await requestIntakeReport();
+            if (intakeReport.textContent && !intakeReport.textContent.startsWith("Nog geen verslag")) {
+                goNextStep();
+            }
+        });
+        askScheduleBtn.addEventListener("click", async () => {
+            // Ga meteen naar de schema-stap en toon een loader
+            goNextStep();
+            scheduleStatus.textContent = "Schema wordt aangemaakt...";
+            scheduleTable.textContent = "🏃‍♂️ Schema wordt geladen...";
+            pushSchemaBtn.disabled = true;
+            await generateSchedule();
+        });
         pushSchemaBtn.addEventListener("click", approveAndPush);
         intakeMessage.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
