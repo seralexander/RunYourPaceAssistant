@@ -833,6 +833,24 @@
         let isGeneratingSchedule = false;
         let selectedFlow = "intake";
         let activeFlow = "intake";
+        const schemaLoadingMessages = [
+            "🏃‍♂️ Agent antwoordt...",
+            "🏃‍♂️ Data verzamelen...",
+            "🏃‍♂️ Plan wordt opgebouwd...",
+            "🏃‍♂️ Nog een momentje, afronden..."
+        ];
+        const intakeLoadingMessages = [
+            "🏃‍♂️ Antwoord wordt opgehaald...",
+            "🏃‍♂️ Ideeën ordenen...",
+            "🏃‍♂️ Beste advies voor je aan het klaarzetten...",
+            "🏃‍♂️ Nog een seconde..."
+        ];
+        const pushLoadingMessages = [
+            "📤 Push voorbereiden...",
+            "🔗 Verbinding met Intervals.icu...",
+            "🚚 Schema wordt verzonden...",
+            "✅ Nog even controleren..."
+        ];
         const testReportText = `1. Aanleiding & motivatie
 
 De deelnemer meldt zich aan voor loopcoaching met als belangrijkste reden het verlangen naar meer structuur en consistentie in zijn trainingen. Hij loopt al enkele jaren recreatief, maar ervaart dat hij zonder begeleiding vaak te snel traint, waardoor vermoeidheid en kleine pijntjes terugkeren.
@@ -948,6 +966,28 @@ Realistisch en haalbaar doel richting maart 2026`;
                 throw err;
             }
             return data;
+        }
+
+        const statusIntervals = new Map();
+
+        function startStatusCycle(el, messages, delay = 1200) {
+            if (!el || !messages?.length) return;
+            stopStatusCycle(el);
+            let idx = 0;
+            el.textContent = messages[idx];
+            const id = setInterval(() => {
+                idx = (idx + 1) % messages.length;
+                el.textContent = messages[idx];
+            }, delay);
+            statusIntervals.set(el, id);
+        }
+
+        function stopStatusCycle(el) {
+            const id = statusIntervals.get(el);
+            if (id) {
+                clearInterval(id);
+                statusIntervals.delete(el);
+            }
         }
 
         function renderIntakeLog() {
@@ -1087,13 +1127,14 @@ Realistisch en haalbaar doel richting maart 2026`;
                     typing = document.createElement("div");
                     typing.id = "schemaTyping";
                     typing.className = "chat-item typing";
-                    typing.textContent = "🏃‍♂️ Agent antwoordt...";
                     schemaLog.appendChild(typing);
                 }
                 typing.style.display = "inline-flex";
+                startStatusCycle(typing, schemaLoadingMessages);
                 schemaLog.scrollTop = schemaLog.scrollHeight;
             } else if (typing) {
                 typing.style.display = "none";
+                stopStatusCycle(typing);
             }
         }
 
@@ -1274,13 +1315,14 @@ Realistisch en haalbaar doel richting maart 2026`;
                     typing = document.createElement("div");
                     typing.id = "intakeTyping";
                     typing.className = "chat-item typing";
-                    typing.textContent = "🏃‍♂️ Antwoord wordt opgehaald";
                     intakeLog.appendChild(typing);
                 }
                 typing.style.display = "inline-flex";
+                startStatusCycle(typing, intakeLoadingMessages);
                 intakeLog.scrollTop = intakeLog.scrollHeight;
             } else if (typing) {
                 typing.style.display = "none";
+                stopStatusCycle(typing);
             }
         }
 
@@ -1330,6 +1372,7 @@ Realistisch en haalbaar doel richting maart 2026`;
                 return;
             }
             scheduleStatus.textContent = "Schema wordt omgezet naar JSON en gepusht...";
+            startStatusCycle(scheduleStatus, pushLoadingMessages, 1400);
             pushSchemaBtn.disabled = true;
             if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
             setScheduleInputDisabled(true);
@@ -1340,7 +1383,8 @@ Realistisch en haalbaar doel richting maart 2026`;
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ schemaText: lastScheduleTable, athleteId }),
                 });
-                scheduleStatus.textContent = `Push uitgevoerd (status ${res.apiStatus}).`;
+                stopStatusCycle(scheduleStatus);
+                scheduleStatus.textContent = `Push succesvol uitgevoerd!`;
                 summaryWorkout.textContent = "Schema gepusht";
                 addScheduleChatMessage(
                     "agent",
@@ -1349,11 +1393,13 @@ Realistisch en haalbaar doel richting maart 2026`;
                 );
                 goNextStep();
             } catch (err) {
+                stopStatusCycle(scheduleStatus);
                 scheduleStatus.textContent = err.message;
             } finally {
                 pushSchemaBtn.disabled = false;
                 if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = false;
                 setScheduleInputDisabled(false);
+                stopStatusCycle(scheduleStatus);
             }
         }
 
@@ -1368,6 +1414,7 @@ Realistisch en haalbaar doel richting maart 2026`;
                 return;
             }
             setSchemaStatus("Schema wordt omgezet naar JSON en gepusht...");
+            startStatusCycle(schemaStatus, pushLoadingMessages, 1400);
             if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
             setScheduleInputDisabled(true);
             addScheduleChatMessage("agent", "Ok ik push je schema! Even geduld...");
@@ -1377,7 +1424,8 @@ Realistisch en haalbaar doel richting maart 2026`;
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ athleteId, transcript: schemaHistory }),
                 });
-                setSchemaStatus(`Push uitgevoerd (status ${res.apiStatus}).`);
+                stopStatusCycle(schemaStatus);
+                setSchemaStatus(`Push succesvol uitgevoerd!`);
                 summaryWorkout.textContent = "Schema gepusht via SchemaMaker";
                 addScheduleChatMessage(
                     "agent",
@@ -1385,10 +1433,12 @@ Realistisch en haalbaar doel richting maart 2026`;
                     { html: true }
                 );
             } catch (err) {
+                stopStatusCycle(schemaStatus);
                 setSchemaStatus(err.message);
             } finally {
                 if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = false;
                 setScheduleInputDisabled(false);
+                stopStatusCycle(schemaStatus);
             }
         }
 
