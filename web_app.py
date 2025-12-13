@@ -629,6 +629,51 @@ def api_schema_chat():
     return jsonify({"ok": True, "reply": reply})
 
 
+@app.post("/api/schedule-adjust")
+def api_schedule_adjust():
+    """
+    Laat de SchemaMaker agent een aangepast schema teruggeven op basis van feedback + huidige schema.
+    """
+    payload = request.get_json(force=True, silent=True) or {}
+    feedback = str(payload.get("feedback", "")).strip()
+    transcript = payload.get("transcript") or []
+    current_schema = str(payload.get("currentSchema", "")).strip()
+
+    if not feedback:
+        return jsonify({"error": "Feedback is verplicht."}), 400
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Agent niet beschikbaar: OPENAI_API_KEY ontbreekt."}), 500
+    if agent_setup_error or run_workflow is None or WorkflowInput is None:
+        return jsonify({"error": f"Schema agent niet beschikbaar: {agent_setup_error or 'initialisatie mislukt.'}"}), 500
+
+    transcript_lines = []
+    for item in transcript:
+        role = item.get("role", "user")
+        text = item.get("text", "")
+        transcript_lines.append(f"{role}: {text}")
+    convo = "\n".join(transcript_lines) if transcript_lines else ""
+
+    prompt_parts = [
+        "Je bent SchemaMaker. Pas het trainingsschema aan op basis van de feedback. Geef het nieuwe schema in duidelijke, gestructureerde opsomming.",
+        "Huidig schema:",
+        current_schema or "(geen schema tekst beschikbaar)",
+        "Feedback van gebruiker:",
+        feedback,
+    ]
+    if convo:
+        prompt_parts.append("Eerder gesprek:")
+        prompt_parts.append(convo)
+
+    prompt = "\n\n".join(prompt_parts)
+
+    try:
+        reply = asyncio.run(run_workflow(WorkflowInput(input_as_text=prompt)))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Schema-aanpassing mislukt: {exc}"}), 500
+
+    return jsonify({"ok": True, "reply": reply})
+
+
 @app.post("/api/schedule-table")
 def api_schedule_table():
     """Vraag de SchemaMaker agent om een tabelvormig schema te maken op basis van het intakeverslag."""

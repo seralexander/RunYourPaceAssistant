@@ -1050,7 +1050,7 @@ Realistisch en haalbaar doel richting maart 2026`;
             renderSchemaLog();
             schemaMessage.value = "";
             schemaSendBtn.disabled = true;
-            setSchemaStatus("Agent request loopt...");
+            setSchemaStatus("Agent request loopt...we denken hard na, dus dit kan even duren.");
             setSchemaLoading(true);
             try {
                 const res = await fetchJson("/api/schema-chat", {
@@ -1082,7 +1082,7 @@ Realistisch en haalbaar doel richting maart 2026`;
             intakeMessage.value = "";
             intakeSendBtn.disabled = true;
             intakeFinishBtn.disabled = true;
-            setIntakeStatus("Agent request loopt...");
+            setIntakeStatus("Agent request loopt...we denken hard na, dus dit kan even duren. request loopt...");
             setIntakeLoading(true);
             try {
                 const res = await fetchJson("/api/intake", {
@@ -1225,7 +1225,7 @@ Realistisch en haalbaar doel richting maart 2026`;
             isGeneratingSchedule = true;
             pushSchemaBtn.disabled = true;
             if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
-            scheduleTable.textContent = "🏃‍♂️ Schema wordt geladen...";
+            scheduleTable.textContent = "🏃‍♂️ Schema wordt geladen... we verwerken al je gegevens dus dit kan even duren.";
             try {
                 const res = await fetchJson("/api/schedule-table", {
                     method: "POST",
