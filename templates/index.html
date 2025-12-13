@@ -369,6 +369,17 @@
             transform: translateY(-1px);
         }
 
+        .input-row textarea:disabled {
+            background: #f3f3f3;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .progress {
             width: 100%;
             background: #f0f0f0;
@@ -718,8 +729,14 @@
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
                     <span class="muted" id="scheduleStatus">Nog geen schema opgevraagd.</span>
                 </div>
-                <div class="pill" style="margin-top:4px; margin-bottom:6px;">Schema</div>
-                <pre id="scheduleTable" style="white-space:pre-wrap;">-</pre>
+                <div class="section-label" style="margin-top:4px; margin-bottom:6px;">Schema chat</div>
+                <div id="scheduleChatLog" class="chat-log"></div>
+                <div class="input-row">
+                    <textarea id="scheduleChatMessage" placeholder="Vraag aanpassingen of licht toe wat er moet veranderen..."></textarea>
+                    <button class="send-btn" type="button" id="scheduleChatSendBtn" aria-label="Vraag aanpassing">
+                        <span class="arrow">↑</span>
+                    </button>
+                </div>
                 <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
                     <button class="ghost" type="button" data-start-step>Terug naar start</button>
                     <div style="display:flex; gap:8px;">
@@ -791,7 +808,9 @@
             (el) => el.dataset.step !== "schema"
         );
         const scheduleStatus = document.getElementById("scheduleStatus");
-        const scheduleTable = document.getElementById("scheduleTable");
+        const scheduleChatLog = document.getElementById("scheduleChatLog");
+        const scheduleChatMessage = document.getElementById("scheduleChatMessage");
+        const scheduleChatSendBtn = document.getElementById("scheduleChatSendBtn");
         const pushSchemaBtn = document.getElementById("pushSchemaBtn");
         const requestReportNextBtn = document.getElementById("requestReportNextBtn");
         const askScheduleBtn = document.getElementById("askScheduleBtn");
@@ -809,6 +828,7 @@
 
         const intakeHistory = [];
         const schemaHistory = [];
+        const scheduleChatHistory = [];
         let lastScheduleTable = "";
         let isGeneratingSchedule = false;
         let selectedFlow = "intake";
@@ -1012,13 +1032,51 @@ Realistisch en haalbaar doel richting maart 2026`;
             // Strip ongewenste filecite tokens en turnXfileY referenties
             const noCites = raw
                 .replace(/filecite/gi, "")
-                .replace(/turn\d+file\d+/gi, "");
+                .replace(/turn\d+file\d+/gi, "")
+                .replace(/[\uE000-\uF8FF]/g, ""); // verwijder private-use pictogrammen (zoals )
             const escaped = escapeHtml(noCites);
             const bolded = escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
             const withBreaks = bolded
                 .replace(/\n{2,}/g, "</p><p>")
                 .replace(/\n/g, "<br>");
             return `<p>${withBreaks}</p>`;
+        }
+
+        function renderScheduleChatLog() {
+            if (!scheduleChatLog) return;
+            if (!scheduleChatHistory.length) {
+                scheduleChatLog.textContent = "Geen berichten.";
+                return;
+            }
+            scheduleChatLog.innerHTML = "";
+            scheduleChatHistory.forEach((item) => {
+                const block = document.createElement("div");
+                block.className = `chat-item ${item.role === "user" ? "user" : "agent"}`;
+
+                const role = document.createElement("div");
+                role.className = "chat-role";
+                role.textContent = item.role === "user" ? "Jij" : "SchemaMaker";
+
+                const bubble = document.createElement("div");
+                bubble.className = "chat-bubble";
+                if (item.role !== "user") bubble.classList.add("agent");
+                bubble.innerHTML =
+                    item.role === "user"
+                        ? escapeHtml(item.text)
+                        : item.html
+                        ? item.text
+                        : formatAgentMessage(item.text);
+
+                block.appendChild(role);
+                block.appendChild(bubble);
+                scheduleChatLog.appendChild(block);
+            });
+            scheduleChatLog.scrollTop = scheduleChatLog.scrollHeight;
+        }
+
+        function addScheduleChatMessage(role, text, { html = false } = {}) {
+            scheduleChatHistory.push({ role, text, html });
+            renderScheduleChatLog();
         }
 
         function setSchemaLoading(state) {
@@ -1058,7 +1116,11 @@ Realistisch en haalbaar doel richting maart 2026`;
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message, transcript: schemaHistory }),
                 });
-                schemaHistory.push({ role: "agent", text: res.reply || "(geen antwoord)" });
+                const replyText = res.reply || "(geen antwoord)";
+                schemaHistory.push({ role: "agent", text: replyText });
+                if (replyText) {
+                    lastScheduleTable = replyText;
+                }
                 renderSchemaLog();
                 setSchemaStatus("Antwoord ontvangen.");
             } catch (err) {
@@ -1197,6 +1259,13 @@ Realistisch en haalbaar doel richting maart 2026`;
             }
         }
 
+        function setScheduleInputDisabled(state) {
+            if (scheduleChatMessage) scheduleChatMessage.disabled = state;
+            if (scheduleChatSendBtn) scheduleChatSendBtn.disabled = state;
+            if (schemaMessage) schemaMessage.disabled = state;
+            if (schemaSendBtn) schemaSendBtn.disabled = state;
+        }
+
         function setIntakeLoading(state) {
             // Toon/hide typing indicator als chat-item
             let typing = document.getElementById("intakeTyping");
@@ -1225,7 +1294,9 @@ Realistisch en haalbaar doel richting maart 2026`;
             isGeneratingSchedule = true;
             pushSchemaBtn.disabled = true;
             if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
-            scheduleTable.textContent = "🏃‍♂️ Schema wordt geladen... we verwerken al je gegevens dus dit kan even duren.";
+            scheduleChatHistory.length = 0;
+            renderScheduleChatLog();
+            addScheduleChatMessage("agent", "🏃‍♂️ Schema wordt geladen... we verwerken al je gegevens dus dit kan even duren.");
             try {
                 const res = await fetchJson("/api/schedule-table", {
                     method: "POST",
@@ -1233,7 +1304,7 @@ Realistisch en haalbaar doel richting maart 2026`;
                     body: JSON.stringify({ report }),
                 });
                 lastScheduleTable = res.reply || "";
-                scheduleTable.textContent = lastScheduleTable || "(geen schema)";
+                addScheduleChatMessage("agent", lastScheduleTable || "(geen schema)");
                 scheduleStatus.textContent = "Schema ontvangen.";
                 pushSchemaBtn.disabled = !lastScheduleTable;
                 if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = !lastScheduleTable;
@@ -1261,6 +1332,8 @@ Realistisch en haalbaar doel richting maart 2026`;
             scheduleStatus.textContent = "Schema wordt omgezet naar JSON en gepusht...";
             pushSchemaBtn.disabled = true;
             if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
+            setScheduleInputDisabled(true);
+            addScheduleChatMessage("agent", "Ok ik push je schema! Even geduld...");
             try {
                 const res = await fetchJson("/api/schedule-json-push", {
                     method: "POST",
@@ -1269,12 +1342,18 @@ Realistisch en haalbaar doel richting maart 2026`;
                 });
                 scheduleStatus.textContent = `Push uitgevoerd (status ${res.apiStatus}).`;
                 summaryWorkout.textContent = "Schema gepusht";
+                addScheduleChatMessage(
+                    "agent",
+                    `<div>Je schema staat nu op intervals.icu!</div><img src="/static/forrest.gif" alt="Run!" style="max-width:160px; border-radius:8px; margin-top:6px;">`,
+                    { html: true }
+                );
                 goNextStep();
             } catch (err) {
                 scheduleStatus.textContent = err.message;
             } finally {
                 pushSchemaBtn.disabled = false;
                 if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = false;
+                setScheduleInputDisabled(false);
             }
         }
 
@@ -1290,6 +1369,8 @@ Realistisch en haalbaar doel richting maart 2026`;
             }
             setSchemaStatus("Schema wordt omgezet naar JSON en gepusht...");
             if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = true;
+            setScheduleInputDisabled(true);
+            addScheduleChatMessage("agent", "Ok ik push je schema! Even geduld...");
             try {
                 const res = await fetchJson("/api/schema-json-chat-push", {
                     method: "POST",
@@ -1298,10 +1379,16 @@ Realistisch en haalbaar doel richting maart 2026`;
                 });
                 setSchemaStatus(`Push uitgevoerd (status ${res.apiStatus}).`);
                 summaryWorkout.textContent = "Schema gepusht via SchemaMaker";
+                addScheduleChatMessage(
+                    "agent",
+                    `<div>Je schema staat nu op intervals.icu!</div><img src="/static/forrest.gif" alt="Run!" style="max-width:160px; border-radius:8px; margin-top:6px;">`,
+                    { html: true }
+                );
             } catch (err) {
                 setSchemaStatus(err.message);
             } finally {
                 if (schemaFlowPushBtn) schemaFlowPushBtn.disabled = false;
+                setScheduleInputDisabled(false);
             }
         }
 
@@ -1323,7 +1410,6 @@ Realistisch en haalbaar doel richting maart 2026`;
             // Ga meteen naar de schema-stap en toon een loader
             goNextStep();
             scheduleStatus.textContent = "Schema wordt aangemaakt...";
-            scheduleTable.textContent = "🏃‍♂️ Schema wordt geladen...";
             pushSchemaBtn.disabled = true;
             await generateSchedule();
         });
@@ -1388,6 +1474,7 @@ Realistisch en haalbaar doel richting maart 2026`;
         updateSchemaPushAvailability();
         setSchemaStatus("Nog niets verstuurd.");
         renderSchemaLog();
+        renderScheduleChatLog();
     </script>
 </body>
 </html>

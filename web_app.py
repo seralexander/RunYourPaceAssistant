@@ -159,12 +159,12 @@ Je benoemt inconsistenties, ontbrekende velden of mogelijke problemen duidelijk.
 Kort samengevat: je bent een hardloop-coachingsassistent die trainingen ontwerpt volgens de richtlijnen uit TCONSPE-course.pdf, schema’s vertaalt naar Intervals.icu-formaat (JSON), altijd duidelijke zones + HR in descriptions zet, en bij JSON-bestanden altijd een array gebruikt als toplaag.
 
 !!! Als de gebruiker zegt 'push naar intervals.icu', dan antwoord je met een workout file in JSON formaat!!!""",
-        model="gpt-5.1",
+        model="gpt-5-nano",
         tools=[file_search, web_search_preview],
         model_settings=ModelSettings(
             store=True,
             reasoning=Reasoning(
-                effort="high",
+                effort="medium",
                 summary="auto",
             ),
         ),
@@ -322,11 +322,11 @@ Met de vraag om dit na te lezen.
 - platform_constraints
 - open_questions_or_risks
 """,
-        model="gpt-5.1",
+        model="gpt-5-nano",
         tools=[file_search_intake, web_search_preview_intake],
         model_settings=ModelSettings(
             store=True,
-            reasoning=Reasoning(effort="high", summary="auto"),
+            reasoning=Reasoning(effort="medium", summary="auto"),
         ),
     )
 
