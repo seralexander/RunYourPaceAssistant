@@ -329,6 +329,46 @@
             border: 1px solid var(--stroke);
         }
 
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: stretch;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .input-row textarea {
+            width: 100%;
+            min-height: 80px;
+            max-height: 140px;
+            border: 1px solid var(--stroke);
+            border-radius: 24px;
+            padding: 14px 52px 14px 14px;
+            font-size: 15px;
+            resize: vertical;
+            background: #fff;
+            color: var(--text);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #000;
+            color: #fff;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            align-self: end;
+        }
+
+        .send-btn .arrow {
+            font-size: 18px;
+            line-height: 1;
+            transform: translateY(-1px);
+        }
+
         .progress {
             width: 100%;
             background: #f0f0f0;
@@ -627,10 +667,14 @@
                 </div>
                 <div class="section-label">Gesprek</div>
                 <div id="intakeLog" class="chat-log"></div>
-                <textarea id="intakeMessage" placeholder="Typ je vraag of info voor de agent..." style="width:100%; min-height:80px; max-height:140px; margin:10px 0;"></textarea>
+                <div class="input-row">
+                    <textarea id="intakeMessage" placeholder="Typ je vraag of info voor de agent..."></textarea>
+                    <button class="send-btn" type="button" id="intakeSendBtn" aria-label="Stuur bericht">
+                        <span class="arrow">↑</span>
+                    </button>
+                </div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
-                    <button class="ghost" type="button" id="intakeSendBtn">Stuur bericht</button>
-                    <button class="primary" type="button" id="intakeFinishBtn">Profiel compleet</button>
+                        <button class="primary" type="button" id="intakeFinishBtn">Profiel compleet ✓</button>
                     <span class="muted" id="intakeStatus">Nog niets verstuurd.</span>
                 </div>
                 <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
@@ -651,6 +695,10 @@
                 </div>
                 <div class="section-label" style="margin-top:4px; margin-bottom:6px;">Verslag</div>
                 <pre id="intakeReport" style="white-space:pre-wrap;">Nog geen verslag opgevraagd.</pre>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0 12px;">
+                    <button class="ghost" type="button" id="loadTestReportBtn">Gebruik testverslag</button>
+                    <span class="muted" style="font-size:13px;">Tijdelijk voor testen, laadt een voorbeeldverslag zonder intake.</span>
+                </div>
                 <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
                     <button class="ghost" type="button" data-start-step>Terug naar start</button>
                     <div style="display:flex; gap:8px;">
@@ -694,33 +742,39 @@
             </section>
         </div>
 
+        <div id="schemaFlow" style="display:none;">
+            <div class="grid">
+                <section class="card step active" data-step="schema">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <h2 style="margin:0;">Schema maker</h2>
+                    </div>
+                    <p class="muted" style="margin:0 0 8px;">Chat met de SchemaMaker agent om direct een schema te laten opstellen.</p>
+                    <div class="section-label">Gesprek</div>
+                    <div id="schemaLog" class="chat-log"></div>
+                    <div class="input-row">
+                        <textarea id="schemaMessage" placeholder="Typ je vraag of info voor Schema maker..."></textarea>
+                        <button class="send-btn" type="button" id="schemaSendBtn" aria-label="Stuur bericht">
+                            <span class="arrow">↑</span>
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                        <span class="muted" id="schemaStatus">Nog niets verstuurd.</span>
+                    </div>
+                    <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
+                        <button class="ghost" type="button" id="schemaBackBtn">Terug naar start</button>
+                        <button class="primary" type="button" id="schemaFlowPushBtn">Schema pushen</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+
         <footer style="margin:24px auto 32px; text-align:center;">
             <a href="https://www.runyourpace.be" target="_blank" rel="noopener noreferrer" class="logo-block" style="justify-content:center; margin-bottom:6px; text-decoration:none; color:inherit;">
             <span class="muted" style="text-transform:uppercase; letter-spacing:0.06em; font-size:12px; margin-right:6px;">Powered by</span>
             <span style="font-weight:800; font-size:18px;">RunYourPace</span>
             </a>
         </footer>
-        </div>
-
-        <div id="schemaFlow" style="display:none;">
-            <section class="card step active" data-step="schema">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <h2 style="margin:0;">Schema maker</h2>
-                </div>
-                <p class="muted" style="margin:0 0 8px;">Chat met de SchemaMaker agent om direct een schema te laten opstellen.</p>
-                <div class="section-label">Gesprek</div>
-                <div id="schemaLog" class="chat-log"></div>
-                <textarea id="schemaMessage" placeholder="Typ je vraag of info voor Schema maker..." style="width:100%; min-height:80px; max-height:140px; margin:10px 0;"></textarea>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
-                    <button class="ghost" type="button" id="schemaSendBtn">Stuur bericht</button>
-                    <span class="muted" id="schemaStatus">Nog niets verstuurd.</span>
-                </div>
-                <div class="step-nav" style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
-                    <button class="ghost" type="button" id="schemaBackBtn">Terug naar start</button>
-                    <button class="primary" type="button" id="schemaFlowPushBtn">Schema pushen</button>
-                </div>
-            </section>
-        </div>
+    </div>
 
     <script>
         const athleteInput = document.getElementById("athleteId");
@@ -751,6 +805,7 @@
         const schemaSendBtn = document.getElementById("schemaSendBtn");
         const schemaStatus = document.getElementById("schemaStatus");
         const schemaFlowPushBtn = document.getElementById("schemaFlowPushBtn");
+        const loadTestReportBtn = document.getElementById("loadTestReportBtn");
 
         const intakeHistory = [];
         const schemaHistory = [];
@@ -758,7 +813,112 @@
         let isGeneratingSchedule = false;
         let selectedFlow = "intake";
         let activeFlow = "intake";
+        const testReportText = `1. Aanleiding & motivatie
 
+De deelnemer meldt zich aan voor loopcoaching met als belangrijkste reden het verlangen naar meer structuur en consistentie in zijn trainingen. Hij loopt al enkele jaren recreatief, maar ervaart dat hij zonder begeleiding vaak te snel traint, waardoor vermoeidheid en kleine pijntjes terugkeren.
+
+Daarnaast ziet hij lopen steeds meer als een mentale uitlaatklep naast een drukke job en gezin, en wil hij dit duurzamer integreren in zijn leven.
+
+2. Loopgeschiedenis
+
+Loopt sinds: ± 6 jaar
+
+Huidige frequentie: 3 à 4 keer per week
+
+Gemiddeld weekvolume: ± 30–35 km
+
+Ervaring met wedstrijden:
+
+10 km (meerdere keren, PR ± 44 min)
+
+10 Miles Antwerpen (1x, zonder specifiek schema)
+
+Geen eerdere professionele loopbegeleiding
+
+De deelnemer traint momenteel op gevoel, vaak gebaseerd op tempo of wat “goed voelt die dag”, maar geeft aan dat dit niet altijd objectief klopt.
+
+3. Blessure- en medische voorgeschiedenis
+
+Vorig jaar lichte achillesklachten (rechts), spontaan verdwenen na tijdelijk minder trainen
+
+Af en toe stijve onderrug na lange werkdagen
+
+Geen chronische blessures
+
+Medisch goedgekeurd om intensief te sporten
+
+Geen medicatie
+
+De deelnemer staat open voor aanvullende kracht- en mobiliteitsoefeningen, mits deze praktisch en haalbaar blijven.
+
+4. Huidige levenscontext
+
+Werkdruk: hoog, vooral pieken in bepaalde projectfases
+
+Slaap: gemiddeld 6,5–7 uur per nacht
+
+Stressniveau: matig tot hoog tijdens werkweken
+
+Beschikbare trainingstijd:
+
+Weekdagen: max. 45–60 minuten
+
+Weekend: langer mogelijk (75–90 minuten)
+
+De deelnemer geeft aan dat flexibiliteit in het schema belangrijk is, omdat onverwachte werk- of gezinsmomenten soms roet in het eten gooien.
+
+5. Doelstelling
+
+Hoofddoel (A-doel):
+Een sterke en goed voorbereide deelname aan de halve marathon in maart 2026, met als richttijd onder de 1u35.
+
+Subdoelen:
+
+Consistent 4 keer per week trainen zonder blessures
+
+Verbeteren van uithoudingsvermogen aan comfortabel tempo
+
+Meer inzicht krijgen in trainingsintensiteit (RPE, gevoel vs. data)
+
+Leren wanneer rust nemen functioneel is, niet falen
+
+De deelnemer benadrukt dat het proces belangrijker is dan enkel de eindtijd.
+
+6. Mentale en emotionele drijfveren
+
+Wil zichzelf bewijzen dat hij naast werk en gezin ook een sportief doel kan realiseren
+
+Zoekt een gevoel van controle en rust via training
+
+Ervaart voldoening in het volgen van een plan en het “afvinken” van trainingen
+
+Is gevoelig aan feedback en duidelijke uitleg over waarom bepaalde trainingen belangrijk zijn
+
+De deelnemer geeft aan behoefte te hebben aan bevestiging dat “trager trainen ook vooruitgang is”.
+
+7. Verwachtingen ten opzichte van coaching
+
+Een duidelijk, maar flexibel trainingsschema
+
+Uitleg bij trainingen (waarom, doel, aandachtspunten)
+
+Mogelijkheid om trainingen aan te passen bij drukke weken of vermoeidheid
+
+Periodieke feedback en bijsturing
+
+Geen overdreven focus op cijfers, wel op betekenisvolle data
+
+De deelnemer staat open voor digitale opvolging via een trainingsplatform.
+
+8. Eerste inschatting coach
+
+Goede aerobe basis, maar beperkte differentiatie in intensiteiten
+
+Neiging tot “middelmatig hard” trainen
+
+Groot potentieel bij betere verdeling tussen rustige en intensieve prikkels
+
+Realistisch en haalbaar doel richting maart 2026`;
         async function fetchJson(url, options) {
             const res = await fetch(url, options);
             const data = await res.json().catch(() => ({}));
@@ -805,7 +965,7 @@
         function renderSchemaLog() {
             if (!schemaLog) return;
             if (!schemaHistory.length) {
-                schemaLog.textContent = "Geen berichten.";
+                schemaLog.textContent = "";
                 updateSchemaPushAvailability();
                 return;
             }
@@ -1153,6 +1313,12 @@
                 goNextStep();
             }
         });
+        if (loadTestReportBtn) {
+            loadTestReportBtn.addEventListener("click", () => {
+                intakeReport.textContent = testReportText;
+                setIntakeStatus("Testverslag geladen.");
+            });
+        }
         askScheduleBtn.addEventListener("click", async () => {
             // Ga meteen naar de schema-stap en toon een loader
             goNextStep();
